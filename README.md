@@ -1,8 +1,6 @@
 # Strands Session Viewer
 
 [![CI](https://github.com/labeveryday/strands-session-viewer/workflows/CI/badge.svg)](https://github.com/labeveryday/strands-session-viewer/actions)
-[![codecov](https://codecov.io/gh/labeveryday/strands-session-viewer/branch/main/graph/badge.svg)](https://codecov.io/gh/labeveryday/strands-session-viewer)
-[![PyPI version](https://badge.fury.io/py/strands-session-viewer.svg)](https://badge.fury.io/py/strands-session-viewer)
 [![Python Versions](https://img.shields.io/pypi/pyversions/strands-session-viewer.svg)](https://pypi.org/project/strands-session-viewer/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
