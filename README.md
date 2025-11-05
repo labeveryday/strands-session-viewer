@@ -1,13 +1,26 @@
 # Strands Session Viewer
 
 [![CI](https://github.com/labeveryday/strands-session-viewer/workflows/CI/badge.svg)](https://github.com/labeveryday/strands-session-viewer/actions)
-[![Python Versions](https://img.shields.io/pypi/pyversions/strands-session-viewer.svg)](https://pypi.org/project/strands-session-viewer/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A clean, browser-based viewer for [Strands](https://github.com/strands-agents/sdk-python) agent sessions. View your agent conversations, tool calls, and results in an intuitive web interface.
 
 Perfect for debugging, teaching, and understanding how your AI agents work.
+
+## What It Does
+
+When you use Strands' `FileSessionManager`, all your agent conversations are automatically saved to your local filesystem as JSON files. Each session includes the full conversation history, tool calls, and results - but they're stored in a raw JSON format that's difficult to read and navigate.
+
+This viewer provides a beautiful web interface to browse and explore those locally stored sessions. Just point it at your sessions directory, and you can:
+- Browse all your agent sessions in one place
+- See the full conversation flow with proper formatting
+- Understand what tools your agent called and why
+- Export sessions for documentation or sharing
+
+No need to manually parse JSON files or write custom scripts - just launch the viewer and start exploring your agent's behavior.
+
+**Learn more**: [Strands Session Management Documentation](https://strandsagents.com/latest/documentation/docs/user-guide/concepts/agents/session-management/)
 
 ![Strands Session Viewer Interface](docs/images/hero-screenshot.png)
 
@@ -28,7 +41,8 @@ Perfect for debugging, teaching, and understanding how your AI agents work.
 ### Installation
 
 ```bash
-pip install strands-session-viewer
+# Install directly from GitHub
+pip install git+https://github.com/labeveryday/strands-session-viewer.git
 ```
 
 ### Usage
@@ -101,16 +115,18 @@ The viewer will automatically open in your browser at `http://localhost:8000`
 strands-session-viewer/
 ├── src/
 │   └── strands_viewer/
-│       ├── __init__.py       # Package initialization
-│       ├── __version__.py    # Version info
-│       ├── cli.py            # Command-line interface
-│       ├── server.py         # FastAPI server
-│       ├── session_reader.py # Session file parser
+│       ├── __init__.py         # Package initialization
+│       ├── __version__.py      # Version info
+│       ├── cli.py              # Command-line interface
+│       ├── server.py           # FastAPI server
+│       ├── session_reader.py   # Session file parser
+│       ├── export_formatter.py # Export formatters (Markdown, JSON, text)
 │       └── static/
-│           └── index.html    # Web interface
-├── pyproject.toml           # Package configuration
-├── LICENSE                  # MIT License
-└── README.md               # This file
+│           └── index.html      # Web interface
+├── tests/                      # Test suite
+├── pyproject.toml             # Package configuration
+├── LICENSE                    # MIT License
+└── README.md                 # This file
 ```
 
 ## Requirements
@@ -132,18 +148,24 @@ The viewer exposes a simple REST API:
 
 ## Development
 
-### Local Installation
+### Local Development Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/labeveryday/strands-session-viewer
+git clone https://github.com/labeveryday/strands-session-viewer.git
 cd strands-session-viewer
 
 # Install in development mode
 pip install -e .
 
-# Or with dev dependencies
+# Or with dev dependencies (recommended)
 pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Run tests with coverage
+pytest --cov=strands_viewer --cov-report=html
 ```
 
 ### Run from Source
@@ -172,7 +194,6 @@ Built for the [Strands](https://github.com/strands-agents/sdk-python) agent fram
 
 ## Links
 
-- **PyPI**: https://pypi.org/project/strands-session-viewer/
 - **GitHub**: https://github.com/labeveryday/strands-session-viewer
 - **Strands SDK**: https://github.com/strands-agents/sdk-python
 - **Issues**: https://github.com/labeveryday/strands-session-viewer/issues
