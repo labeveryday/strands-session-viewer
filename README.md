@@ -9,6 +9,8 @@ A clean, browser-based viewer for [Strands](https://github.com/strands-agents/sd
 
 Perfect for debugging, teaching, and understanding how your AI agents work.
 
+![Strands Session Viewer Interface](docs/images/hero-screenshot.png)
+
 ## Features
 
 - 📋 **Session Browser** - List and browse all your agent sessions
@@ -48,6 +50,8 @@ strands-viewer --help
 The viewer will automatically open in your browser at `http://localhost:8000`
 
 ## Interface Overview
+
+![Interface Overview](docs/images/interface-overview.png)
 
 ### Session List (Left Sidebar)
 - Click any session to view its messages
