@@ -3,12 +3,13 @@ FastAPI server for Strands session viewer.
 """
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse
 from pathlib import Path
 from typing import Optional
 import uvicorn
 
 from strands_viewer.session_reader import SessionReader
+from strands_viewer.export_formatter import format_session, get_filename
 
 
 class SessionViewerApp:
@@ -57,6 +58,53 @@ class SessionViewerApp:
             try:
                 messages = self.reader.get_messages(session_id, limit, offset)
                 return {"success": True, "messages": messages}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.get("/api/sessions/{session_id}/export")
+        async def export_session(session_id: str, format: str = "markdown"):
+            """
+            Export a session in the specified format.
+
+            Args:
+                session_id: Session ID to export
+                format: Export format (markdown, json, text)
+
+            Returns:
+                Formatted session content
+            """
+            try:
+                # Get session data
+                session = self.reader.get_session(session_id)
+                if not session:
+                    raise HTTPException(status_code=404, detail="Session not found")
+
+                # Format the session
+                try:
+                    content = format_session(session, format)
+                except ValueError as e:
+                    raise HTTPException(status_code=400, detail=str(e))
+
+                # Determine content type
+                content_types = {
+                    "markdown": "text/markdown",
+                    "json": "application/json",
+                    "text": "text/plain",
+                }
+                content_type = content_types.get(format, "text/plain")
+
+                # Generate filename
+                filename = get_filename(session_id, format)
+
+                # Return with appropriate headers for download
+                return PlainTextResponse(
+                    content,
+                    media_type=content_type,
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+                )
+
+            except HTTPException:
+                raise
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 

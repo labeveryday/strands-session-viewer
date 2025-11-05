@@ -18,6 +18,7 @@ Perfect for debugging, teaching, and understanding how your AI agents work.
 - 🔧 **Tool Call Visualization** - See tool calls and their results clearly
 - 🔍 **Search & Filter** - Find messages by content, role, or tool usage
 - ❌ **Error Highlighting** - Quickly spot failed tool executions
+- 📥 **Export Sessions** - Download as Markdown, JSON, or plain text
 - 🎨 **Clean UI** - Modern interface built with Tailwind CSS
 - ⚡ **Fast & Lightweight** - No build process, runs instantly
 - 🔄 **Real-time Refresh** - Reload sessions to see new messages
@@ -66,6 +67,11 @@ The viewer will automatically open in your browser at `http://localhost:8000`
 - **Role Filter** - Show only user or assistant messages
 - **Tool Calls** - Show only messages with tool usage
 - **Errors** - Show only failed tool executions
+
+### Export Options
+- **Markdown** - Perfect for documentation and course materials
+- **JSON** - For programmatic analysis and archiving
+- **Plain Text** - Simple, readable format for sharing
 
 ## Use Cases
 
@@ -120,6 +126,7 @@ The viewer exposes a simple REST API:
 - `GET /api/sessions` - List all sessions
 - `GET /api/sessions/{session_id}` - Get session details
 - `GET /api/sessions/{session_id}/messages` - Get session messages (with pagination)
+- `GET /api/sessions/{session_id}/export?format=markdown` - Export session (formats: markdown, json, text)
 
 ## Development
 

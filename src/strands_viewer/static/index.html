@@ -109,14 +109,68 @@
                     <div x-show="selectedSessionId && !loadingSession && currentSession" class="space-y-4">
                         <!-- Session Info -->
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                            <h3 class="font-semibold text-gray-900 mb-2" x-text="currentSession?.session_id"></h3>
-                            <div class="flex items-center space-x-4 text-sm text-gray-500">
-                                <span x-text="`Created: ${formatDate(currentSession?.created_at)}`"></span>
-                                <span x-text="`Updated: ${formatDate(currentSession?.updated_at)}`"></span>
-                                <span x-text="`Messages: ${currentSession?.messages?.length || 0}`"></span>
-                                <span x-show="filteredMessages().length !== currentSession?.messages?.length"
-                                      class="text-blue-600 font-medium"
-                                      x-text="`(Showing ${filteredMessages().length})`"></span>
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900 mb-2" x-text="currentSession?.session_id"></h3>
+                                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                        <span x-text="`Created: ${formatDate(currentSession?.created_at)}`"></span>
+                                        <span x-text="`Updated: ${formatDate(currentSession?.updated_at)}`"></span>
+                                        <span x-text="`Messages: ${currentSession?.messages?.length || 0}`"></span>
+                                        <span x-show="filteredMessages().length !== currentSession?.messages?.length"
+                                              class="text-blue-600 font-medium"
+                                              x-text="`(Showing ${filteredMessages().length})`"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Export Dropdown -->
+                                <div x-data="{ open: false }" class="relative">
+                                    <button
+                                        @click="open = !open"
+                                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center space-x-2"
+                                    >
+                                        <span>📥 Export</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Dropdown Menu -->
+                                    <div
+                                        x-show="open"
+                                        @click.away="open = false"
+                                        x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95"
+                                        class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
+                                    >
+                                        <div class="py-1">
+                                            <button
+                                                @click="exportSession('markdown'); open = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                                            >
+                                                <span>📄</span>
+                                                <span>Markdown (.md)</span>
+                                            </button>
+                                            <button
+                                                @click="exportSession('json'); open = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                                            >
+                                                <span>{ }</span>
+                                                <span>JSON (.json)</span>
+                                            </button>
+                                            <button
+                                                @click="exportSession('text'); open = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                                            >
+                                                <span>📝</span>
+                                                <span>Text (.txt)</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -426,6 +480,17 @@
                            this.filterRole !== 'all' ||
                            this.filterToolCalls ||
                            this.filterErrors;
+                },
+
+                exportSession(format) {
+                    if (!this.selectedSessionId) {
+                        alert('No session selected');
+                        return;
+                    }
+
+                    // Download the file by opening the export URL
+                    const url = `/api/sessions/${this.selectedSessionId}/export?format=${format}`;
+                    window.location.href = url;
                 },
 
                 formatDate(dateString) {
