@@ -63,6 +63,8 @@ strands-viewer --help
 
 The viewer will automatically open in your browser at `http://localhost:8000`
 
+**To stop the server:** Press `Ctrl+C` (or `Command+C` on Mac) in the terminal where it's running.
+
 ## Interface Overview
 
 ![Interface Overview](docs/images/interface-overview.png)
