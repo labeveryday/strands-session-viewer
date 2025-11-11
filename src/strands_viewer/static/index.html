@@ -246,6 +246,91 @@
                             </div>
                         </div>
 
+                        <!-- AI Analysis Panel -->
+                        <div x-show="aiAvailable" class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-sm border border-purple-200 p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-semibold text-purple-900 flex items-center space-x-2">
+                                    <span>🤖</span>
+                                    <span>AI Session Analysis</span>
+                                </h3>
+                                <button
+                                    @click="showAIPanel = !showAIPanel"
+                                    class="text-sm text-purple-700 hover:text-purple-900 font-medium"
+                                    x-text="showAIPanel ? 'Hide' : 'Show'">
+                                </button>
+                            </div>
+
+                            <div x-show="showAIPanel" x-transition>
+                                <!-- Quick Actions -->
+                                <div class="grid grid-cols-3 gap-2 mb-4">
+                                    <button
+                                        @click="analyzeSession('summarize')"
+                                        :disabled="analyzingSession"
+                                        class="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium disabled:opacity-50">
+                                        📊 Summarize
+                                    </button>
+                                    <button
+                                        @click="analyzeSession('errors')"
+                                        :disabled="analyzingSession"
+                                        class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium disabled:opacity-50">
+                                        ❌ Analyze Errors
+                                    </button>
+                                    <button
+                                        @click="analyzeSession('improvements')"
+                                        :disabled="analyzingSession"
+                                        class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium disabled:opacity-50">
+                                        💡 Suggest
+                                    </button>
+                                </div>
+
+                                <!-- AI Response -->
+                                <div x-show="aiResponse || analyzingSession" class="bg-white rounded-lg p-4 mb-4 border border-purple-200">
+                                    <div x-show="analyzingSession" class="flex items-center space-x-2 text-purple-600">
+                                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                                        <span class="text-sm">AI is analyzing...</span>
+                                    </div>
+                                    <div x-show="!analyzingSession && aiResponse" class="text-sm text-gray-800 whitespace-pre-wrap" x-text="aiResponse"></div>
+                                </div>
+
+                                <!-- Chat Interface -->
+                                <div class="bg-white rounded-lg p-4 border border-purple-200">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        💬 Ask about this session
+                                    </label>
+                                    <div class="flex space-x-2">
+                                        <input
+                                            type="text"
+                                            x-model="aiQuestion"
+                                            @keyup.enter="askAIQuestion()"
+                                            placeholder="E.g., Why did this tool call fail?"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                                            :disabled="analyzingSession">
+                                        <button
+                                            @click="askAIQuestion()"
+                                            :disabled="!aiQuestion.trim() || analyzingSession"
+                                            class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium disabled:opacity-50">
+                                            Send
+                                        </button>
+                                    </div>
+
+                                    <!-- Chat History -->
+                                    <div x-show="chatHistory.length > 0" class="mt-3 space-y-2 max-h-64 overflow-y-auto">
+                                        <template x-for="(chat, idx) in chatHistory" :key="idx">
+                                            <div class="text-sm">
+                                                <div class="font-medium text-purple-700 mb-1" x-text="'Q: ' + chat.question"></div>
+                                                <div class="text-gray-700 ml-2 pl-2 border-l-2 border-purple-200" x-text="'A: ' + chat.answer"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AI Not Available Message -->
+                            <div x-show="!aiAvailable" class="text-sm text-purple-700">
+                                AI analysis not available. Install with: <code class="bg-purple-100 px-2 py-1 rounded">pip install strands-session-viewer[ai]</code>
+                            </div>
+                        </div>
+
                         <!-- Message List -->
                         <div class="space-y-4">
                             <!-- No results message -->
@@ -357,8 +442,17 @@
                 filterToolCalls: false,
                 filterErrors: false,
 
+                // AI Analysis state
+                aiAvailable: false,
+                showAIPanel: true,
+                analyzingSession: false,
+                aiResponse: '',
+                aiQuestion: '',
+                chatHistory: [],
+
                 async init() {
                     await this.loadSessions();
+                    await this.checkAIStatus();
                 },
 
                 async loadSessions() {
@@ -515,6 +609,113 @@
                         'system': 'bg-gray-100 text-gray-900'
                     };
                     return classes[role] || 'bg-gray-100 text-gray-900';
+                },
+
+                // AI Analysis Methods
+                async checkAIStatus() {
+                    try {
+                        const response = await fetch('/api/ai/status');
+                        const data = await response.json();
+                        this.aiAvailable = data.available;
+                    } catch (error) {
+                        console.error('Error checking AI status:', error);
+                        this.aiAvailable = false;
+                    }
+                },
+
+                async analyzeSession(analysisType) {
+                    if (!this.selectedSessionId) {
+                        alert('No session selected');
+                        return;
+                    }
+
+                    this.analyzingSession = true;
+                    this.aiResponse = '';
+
+                    try {
+                        const response = await fetch(`/api/sessions/${this.selectedSessionId}/analyze`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ analysis_type: analysisType })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.status === 503) {
+                            alert('AI analysis not available. Install with: pip install strands-session-viewer[ai]');
+                            return;
+                        }
+
+                        if (data.success) {
+                            this.aiResponse = data.analysis;
+                        } else {
+                            alert('Failed to analyze session');
+                        }
+                    } catch (error) {
+                        console.error('Error analyzing session:', error);
+                        alert('Failed to analyze session');
+                    } finally {
+                        this.analyzingSession = false;
+                    }
+                },
+
+                async askAIQuestion() {
+                    if (!this.aiQuestion.trim() || !this.selectedSessionId) {
+                        return;
+                    }
+
+                    const question = this.aiQuestion.trim();
+                    this.analyzingSession = true;
+                    this.aiResponse = '';
+
+                    try {
+                        const response = await fetch(`/api/sessions/${this.selectedSessionId}/chat`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                question: question,
+                                chat_history: this.chatHistory.map(chat => ({
+                                    role: 'user',
+                                    content: chat.question
+                                })).concat(this.chatHistory.map(chat => ({
+                                    role: 'assistant',
+                                    content: chat.answer
+                                })))
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.status === 503) {
+                            alert('AI analysis not available. Install with: pip install strands-session-viewer[ai]');
+                            return;
+                        }
+
+                        if (data.success) {
+                            // Add to chat history
+                            this.chatHistory.push({
+                                question: question,
+                                answer: data.answer
+                            });
+
+                            // Show latest answer
+                            this.aiResponse = data.answer;
+
+                            // Clear question input
+                            this.aiQuestion = '';
+                        } else {
+                            alert('Failed to get AI response');
+                        }
+                    } catch (error) {
+                        console.error('Error asking AI:', error);
+                        alert('Failed to get AI response');
+                    } finally {
+                        this.analyzingSession = false;
+                    }
                 }
             }
         }

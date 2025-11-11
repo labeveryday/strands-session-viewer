@@ -4,7 +4,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A clean, browser-based viewer for [Strands](https://github.com/strands-agents/sdk-python) agent sessions. View your agent conversations, tool calls, and results in an intuitive web interface.
+A clean, browser-based viewer for [Strands](https://github.com/strands-agents/sdk-python) agent sessions. View your agent conversations, tool calls, and results in an intuitive web interface - now with **AI-powered analysis** using Strands agents.
 
 Perfect for debugging, teaching, and understanding how your AI agents work.
 
@@ -26,6 +26,7 @@ No need to manually parse JSON files or write custom scripts - just launch the v
 
 ## Features
 
+### Core Features
 - 📋 **Session Browser** - List and browse all your agent sessions
 - 💬 **Message Timeline** - View full conversation flow chronologically
 - 🔧 **Tool Call Visualization** - See tool calls and their results clearly
@@ -35,6 +36,13 @@ No need to manually parse JSON files or write custom scripts - just launch the v
 - 🎨 **Clean UI** - Modern interface built with Tailwind CSS
 - ⚡ **Fast & Lightweight** - No build process, runs instantly
 - 🔄 **Real-time Refresh** - Reload sessions to see new messages
+
+### AI-Powered Analysis (Optional)
+- 🤖 **AI Session Summaries** - Get instant AI-generated summaries of your sessions
+- 🔍 **Error Analysis** - AI-powered debugging and error explanations
+- 💡 **Improvement Suggestions** - Get recommendations to optimize your agents
+- 💬 **Interactive Q&A** - Ask questions about sessions and get AI answers
+- 🧠 **Powered by Strands** - Uses Strands agents for consistent, high-quality analysis
 
 ## Quick Start
 
@@ -64,6 +72,76 @@ strands-viewer --help
 The viewer will automatically open in your browser at `http://localhost:8000`
 
 **To stop the server:** Press `Ctrl+C` (or `Command+C` on Mac) in the terminal where it's running.
+
+## AI-Powered Session Analysis
+
+Enhance your debugging with AI-powered analysis using Strands agents. The viewer can automatically analyze your sessions, explain errors, suggest improvements, and answer questions about agent behavior.
+
+### Installation
+
+To enable AI analysis features, install with the `ai` extra:
+
+```bash
+pip install 'strands-session-viewer[ai]' git+https://github.com/labeveryday/strands-session-viewer.git
+```
+
+This installs the `strands-agents` package, which powers the AI analysis features.
+
+### Configuration
+
+AI analysis uses Strands agents, which by default run on **Amazon Bedrock with Claude 4**. Configure your AWS credentials:
+
+```bash
+# Option 1: Environment variables
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+export AWS_REGION="us-east-1"  # Optional, defaults to us-east-1
+
+# Option 2: AWS CLI configuration
+aws configure
+```
+
+Alternatively, use AWS credential files (`~/.aws/credentials` and `~/.aws/config`).
+
+**Learn more**: [Strands Quickstart Guide](https://strandsagents.com/latest/documentation/docs/user-guide/quickstart/)
+
+### Features
+
+Once configured, you'll see an **AI Session Analysis** panel when viewing any session:
+
+#### Quick Analysis
+- **📊 Summarize** - Get an AI-generated summary of the entire session
+- **❌ Analyze Errors** - Understand what went wrong and why
+- **💡 Suggest Improvements** - Get recommendations to optimize your agent
+
+#### Interactive Chat
+Ask questions about the session and get instant AI-powered answers:
+- "Why did this tool call fail?"
+- "How could this agent be more efficient?"
+- "What was the agent trying to accomplish here?"
+- "Are there any security concerns in this session?"
+
+The AI maintains conversation history, so you can have a back-and-forth dialogue about your sessions.
+
+### Example Workflow
+
+```bash
+# 1. Install with AI support
+pip install 'strands-session-viewer[ai]' git+https://github.com/labeveryday/strands-session-viewer.git
+
+# 2. Configure AWS credentials
+export AWS_ACCESS_KEY_ID="your-key"
+export AWS_SECRET_ACCESS_KEY="your-secret"
+
+# 3. Launch viewer
+strands-viewer
+
+# 4. Select a session and use the AI Analysis panel
+```
+
+### No AI? No Problem
+
+The AI features are completely optional. Without the `ai` extra installed, the viewer works perfectly for browsing and exporting sessions - you just won't see the AI Analysis panel.
 
 ## Interface Overview
 

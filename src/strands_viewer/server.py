@@ -2,14 +2,22 @@
 FastAPI server for Strands session viewer.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, List
 import uvicorn
 
 from strands_viewer.session_reader import SessionReader
 from strands_viewer.export_formatter import format_session, get_filename
+
+try:
+    from strands_viewer.ai_analysis import SessionAnalyzer, STRANDS_AVAILABLE
+
+    AI_AVAILABLE = STRANDS_AVAILABLE
+except ImportError:
+    AI_AVAILABLE = False
+    SessionAnalyzer = None
 
 
 class SessionViewerApp:
@@ -19,6 +27,7 @@ class SessionViewerApp:
         self.storage_dir = storage_dir
         self.port = port
         self.reader = SessionReader(storage_dir)
+        self.analyzer = SessionAnalyzer() if AI_AVAILABLE and SessionAnalyzer else None
         self.app = self._create_app()
 
     def _create_app(self) -> FastAPI:
@@ -102,6 +111,108 @@ class SessionViewerApp:
                     media_type=content_type,
                     headers={"Content-Disposition": f'attachment; filename="{filename}"'},
                 )
+
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        # AI Analysis Routes
+        @app.get("/api/ai/status")
+        async def ai_status():
+            """Check if AI analysis is available."""
+            return {
+                "available": AI_AVAILABLE and self.analyzer is not None,
+                "features": (
+                    {
+                        "summarize": AI_AVAILABLE,
+                        "analyze_errors": AI_AVAILABLE,
+                        "chat": AI_AVAILABLE,
+                        "suggest_improvements": AI_AVAILABLE,
+                    }
+                    if AI_AVAILABLE
+                    else {}
+                ),
+            }
+
+        @app.post("/api/sessions/{session_id}/analyze")
+        async def analyze_session(session_id: str, analysis_type: str = Body(..., embed=True)):
+            """
+            Analyze a session using AI.
+
+            Args:
+                session_id: Session ID to analyze
+                analysis_type: Type of analysis (summarize, errors, improvements)
+
+            Returns:
+                Analysis results
+            """
+            if not AI_AVAILABLE or not self.analyzer:
+                raise HTTPException(
+                    status_code=503,
+                    detail="AI analysis not available. Install with: pip install strands-session-viewer[ai]",
+                )
+
+            try:
+                # Get session data
+                session = self.reader.get_session(session_id)
+                if not session:
+                    raise HTTPException(status_code=404, detail="Session not found")
+
+                # Perform analysis based on type
+                if analysis_type == "summarize":
+                    result = self.analyzer.summarize_session(session)
+                elif analysis_type == "errors":
+                    result = self.analyzer.analyze_errors(session)
+                    if result is None:
+                        result = "No errors found in this session."
+                elif analysis_type == "improvements":
+                    result = self.analyzer.suggest_improvements(session)
+                else:
+                    raise HTTPException(
+                        status_code=400, detail=f"Unknown analysis type: {analysis_type}"
+                    )
+
+                return {"success": True, "analysis": result}
+
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @app.post("/api/sessions/{session_id}/chat")
+        async def chat_about_session(
+            session_id: str,
+            question: str = Body(..., embed=True),
+            chat_history: Optional[List[Dict[str, str]]] = Body(None, embed=True),
+        ):
+            """
+            Ask questions about a session using AI.
+
+            Args:
+                session_id: Session ID to analyze
+                question: User's question
+                chat_history: Optional previous conversation history
+
+            Returns:
+                AI response
+            """
+            if not AI_AVAILABLE or not self.analyzer:
+                raise HTTPException(
+                    status_code=503,
+                    detail="AI analysis not available. Install with: pip install strands-session-viewer[ai]",
+                )
+
+            try:
+                # Get session data
+                session = self.reader.get_session(session_id)
+                if not session:
+                    raise HTTPException(status_code=404, detail="Session not found")
+
+                # Get AI response
+                answer = self.analyzer.answer_question(session, question, chat_history)
+
+                return {"success": True, "answer": answer}
 
             except HTTPException:
                 raise

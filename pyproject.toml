@@ -40,6 +40,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+ai = [
+    "strands-agents>=0.1.0",  # Strands framework for AI analysis
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
