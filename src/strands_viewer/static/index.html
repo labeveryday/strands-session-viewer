@@ -359,11 +359,14 @@
                                                         <p :class="content.toolResult?.status === 'error' ? 'text-red-700' : 'text-green-700'" class="text-xs mt-1">
                                                             ID: <span x-text="content.toolResult?.toolUseId"></span>
                                                         </p>
-                                                        <template x-for="(resultContent, idx) in content.toolResult?.content" :key="idx">
-                                                            <div class="mt-2">
-                                                                <pre x-show="resultContent.text" class="tool-call text-xs p-2 bg-white rounded border overflow-x-auto" :class="content.toolResult?.status === 'error' ? 'border-red-200' : 'border-green-200'" x-text="resultContent.text"></pre>
-                                                            </div>
-                                                        </template>
+                                                        <details class="mt-2">
+                                                            <summary :class="content.toolResult?.status === 'error' ? 'text-red-700 hover:text-red-900' : 'text-green-700 hover:text-green-900'" class="cursor-pointer text-xs">Show Output</summary>
+                                                            <template x-for="(resultContent, idx) in content.toolResult?.content" :key="idx">
+                                                                <div class="mt-2">
+                                                                    <pre x-show="resultContent.text" class="tool-call text-xs p-2 bg-white rounded border overflow-x-auto" :class="content.toolResult?.status === 'error' ? 'border-red-200' : 'border-green-200'" x-text="resultContent.text"></pre>
+                                                                </div>
+                                                            </template>
+                                                        </details>
                                                     </div>
                                                 </div>
                                             </div>
