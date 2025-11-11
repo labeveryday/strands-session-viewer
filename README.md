@@ -48,28 +48,54 @@ No need to manually parse JSON files or write custom scripts - just launch the v
 
 ### Installation
 
+**Important**: Install the viewer globally or in a dedicated environment - **not** in your agent project's virtual environment.
+
 ```bash
-# Install directly from GitHub
+# Basic installation (without AI features)
 pip install git+https://github.com/labeveryday/strands-session-viewer.git
+
+# With AI analysis features
+pip install 'strands-session-viewer[ai] @ git+https://github.com/labeveryday/strands-session-viewer.git'
 ```
 
 ### Usage
 
-```bash
-# View sessions in ./sessions directory
-strands-viewer
+The viewer works by pointing it at your agent's sessions directory. There are two ways to do this:
 
-# Or specify a custom directory
-strands-viewer /path/to/your/sessions
+#### Option 1: Navigate to your sessions directory
+
+```bash
+# Go to your agent project where sessions are stored
+cd /path/to/your-agent-project/src
+
+# Launch the viewer (it will find ./sessions automatically)
+strands-viewer
+```
+
+#### Option 2: Specify the path from anywhere
+
+```bash
+# Point to your agent's sessions from any directory
+strands-viewer /path/to/your-agent-project/src/sessions
+
+# Or use relative paths
+strands-viewer ../my-agent/src/sessions
+```
+
+#### Common Examples
+
+```bash
+# View sessions with AI analysis using OpenAI
+strands-viewer --model-provider openai --model-id gpt-5-mini-2025-08-07
+
+# Use Ollama for local AI analysis
+strands-viewer --model-provider ollama --model-id qwen3:4b
 
 # Use a different port
 strands-viewer --port 8080
 
-# Use OpenAI for AI analysis
-strands-viewer --model-provider openai --model-id gpt-5-mini-2025-08-07
-
-# Use Ollama for AI analysis (local)
-strands-viewer --model-provider ollama --model-id qwen3:4b
+# Specify sessions directory and model provider
+strands-viewer /path/to/sessions --model-provider anthropic
 
 # See all options
 strands-viewer --help
@@ -78,6 +104,27 @@ strands-viewer --help
 The viewer will automatically open in your browser at `http://localhost:8000`
 
 **To stop the server:** Press `Ctrl+C` (or `Command+C` on Mac) in the terminal where it's running.
+
+### Typical Workflow
+
+1. **Install the viewer** (one time):
+   ```bash
+   pip install 'strands-session-viewer[ai] @ git+https://github.com/labeveryday/strands-session-viewer.git'
+   ```
+
+2. **Run your Strands agent** to generate sessions (in your agent project)
+
+3. **Navigate to where your sessions are**:
+   ```bash
+   cd /path/to/your-agent-project/src
+   ```
+
+4. **Launch the viewer**:
+   ```bash
+   strands-viewer
+   ```
+
+5. **Browse and analyze** your sessions in the web interface
 
 ## AI-Powered Session Analysis
 
@@ -158,14 +205,17 @@ The AI maintains conversation history, so you can have a back-and-forth dialogue
 # 1. Install with AI support
 pip install 'strands-session-viewer[ai] @ git+https://github.com/labeveryday/strands-session-viewer.git'
 
-# 2. Configure AWS credentials
+# 2. Configure your preferred model provider (example: AWS for Bedrock)
 export AWS_ACCESS_KEY_ID="your-key"
 export AWS_SECRET_ACCESS_KEY="your-secret"
 
-# 3. Launch viewer
-strands-viewer
+# 3. Navigate to your agent's sessions directory
+cd /path/to/your-agent-project/src
 
-# 4. Select a session and use the AI Analysis panel
+# 4. Launch viewer with model provider
+strands-viewer --model-provider anthropic --model-id claude-sonnet-4-5-20250929
+
+# 5. Select a session and use the AI Analysis panel in the web interface
 ```
 
 ### No AI? No Problem
