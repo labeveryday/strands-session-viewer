@@ -62,12 +62,13 @@ Examples:
     parser.add_argument(
         "--model-provider",
         choices=["anthropic", "openai", "ollama"],
-        help="Model provider for session analysis (requires AI extra)",
+        default="anthropic",  # Default to Anthropic Haiku for cost savings
+        help="Model provider for session analysis (default: anthropic, requires AI extra)",
     )
 
     parser.add_argument(
         "--model-id",
-        help="Model ID to use (e.g., claude-sonnet-4-5-20250929, gpt-5-mini-2025-08-07)",
+        help="Model ID to use (e.g., claude-haiku-4-5-20251001, gpt-5-mini-2025-08-07)",
     )
 
     args = parser.parse_args()
@@ -88,7 +89,7 @@ Examples:
     try:
         from strands_viewer.server import SessionViewerApp
 
-        # Create model instance if provider specified
+        # Create model instance (defaults to Anthropic Haiku if AI is available)
         model = None
         if args.model_provider:
             try:
@@ -104,12 +105,15 @@ Examples:
 
                 if args.model_provider == "anthropic":
                     model = anthropic_model(**model_kwargs)
+                    model_name = model_kwargs.get("model_id", "claude-haiku-4-5-20251001")
                 elif args.model_provider == "openai":
                     model = openai_model(**model_kwargs)
+                    model_name = model_kwargs.get("model_id", "gpt-5-mini-2025-08-07")
                 elif args.model_provider == "ollama":
                     model = ollama_model(**model_kwargs)
+                    model_name = model_kwargs.get("model_id", "qwen3:4b")
 
-                print(f"🤖 Using {args.model_provider} model")
+                print(f"🤖 Using {args.model_provider} model: {model_name}")
             except ImportError:
                 print("⚠️  Warning: AI features not available.")
                 print("   Install with: pip install 'strands-session-viewer[ai]'")

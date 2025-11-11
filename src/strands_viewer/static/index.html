@@ -287,6 +287,10 @@
                         <span>🤖</span>
                         <span>AI Analysis</span>
                     </h3>
+                    <div class="mt-2 text-xs text-purple-700 font-mono bg-white/50 px-2 py-1 rounded truncate" x-show="selectedSession">
+                        <span class="font-semibold">Session:</span>
+                        <span x-text="selectedSession ? (selectedSession.session_id || selectedSession.metadata?.session_id || 'Unknown') : ''"></span>
+                    </div>
                 </div>
 
                 <!-- Quick Actions -->
