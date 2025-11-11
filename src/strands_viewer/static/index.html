@@ -421,14 +421,6 @@
                         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
                     </div>
 
-                    <!-- Latest Response -->
-                    <div x-show="aiResponse && !analyzingSession" class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                        <div class="flex items-start space-x-2">
-                            <span class="text-purple-600">🤖</span>
-                            <div class="flex-1 text-sm text-gray-800 markdown-content" x-html="renderMarkdown(aiResponse)"></div>
-                        </div>
-                    </div>
-
                     <!-- Chat History -->
                     <template x-for="(chat, index) in chatHistory" :key="index">
                         <div class="space-y-2">
@@ -450,7 +442,7 @@
                     </template>
 
                     <!-- Empty State -->
-                    <div x-show="!aiResponse && !analyzingSession && chatHistory.length === 0" class="text-center py-8 text-gray-500 text-sm">
+                    <div x-show="!analyzingSession && chatHistory.length === 0" class="text-center py-8 text-gray-500 text-sm">
                         <p>Click a button above or ask a question below</p>
                     </div>
                 </div>
@@ -470,8 +462,8 @@
                             Send
                         </button>
                     </div>
-                    <button x-show="chatHistory.length > 0" @click="chatHistory = []; aiResponse = ''" class="mt-2 text-xs text-gray-500 hover:text-gray-700">
-                        Clear Chat
+                    <button x-show="chatHistory.length > 0" @click="chatHistory = []" class="mt-2 text-xs text-gray-500 hover:text-gray-700">
+                        Clear Conversation
                     </button>
                 </div>
             </aside>
@@ -676,7 +668,14 @@
                     }
 
                     this.analyzingSession = true;
-                    this.aiResponse = '';
+
+                    // Generate a user-friendly question based on analysis type
+                    const analysisQuestions = {
+                        'summarize': 'Summarize this session',
+                        'errors': 'What errors occurred in this session?',
+                        'improvements': 'What improvements do you suggest?'
+                    };
+                    const question = analysisQuestions[analysisType] || 'Analyze this session';
 
                     try {
                         const response = await fetch(`/api/sessions/${this.selectedSessionId}/analyze`, {
@@ -695,7 +694,13 @@
                         }
 
                         if (data.success) {
-                            this.aiResponse = data.analysis;
+                            // Add to chat history for chronological flow
+                            this.chatHistory.push({
+                                question: question,
+                                answer: data.analysis
+                            });
+                            // Clear aiResponse since we're using chat history
+                            this.aiResponse = '';
                         } else {
                             alert('Failed to analyze session');
                         }
@@ -747,7 +752,6 @@
                                 answer: data.answer
                             });
 
-                            this.aiResponse = data.answer;
                             this.aiQuestion = '';
                         } else {
                             alert('Failed to get AI response');
