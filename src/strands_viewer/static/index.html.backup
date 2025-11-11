@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strands Session Viewer</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Alpine.js for reactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+
+        .message-content {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .tool-call {
+            font-family: ui-monospace, monospace;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div x-data="sessionViewer()" x-cloak class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <h1 class="text-2xl font-bold text-gray-900">🤖 Strands Session Viewer</h1>
+                        <span x-show="sessions.length > 0" class="text-sm text-gray-500" x-text="`${sessions.length} sessions`"></span>
+                    </div>
+                    <button @click="loadSessions()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="grid grid-cols-12 gap-6">
+                <!-- Session List Sidebar -->
+                <div class="col-span-12 lg:col-span-4">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-20">
+                        <div class="p-4 border-b border-gray-200">
+                            <h2 class="text-lg font-semibold text-gray-900">Sessions</h2>
+                        </div>
+                        <div class="overflow-y-auto max-h-[calc(100vh-12rem)]">
+                            <!-- Loading State -->
+                            <div x-show="loading && sessions.length === 0" class="p-8 text-center">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                <p class="mt-2 text-sm text-gray-500">Loading sessions...</p>
+                            </div>
+
+                            <!-- Empty State -->
+                            <div x-show="!loading && sessions.length === 0" class="p-8 text-center">
+                                <p class="text-gray-500">No sessions found</p>
+                            </div>
+
+                            <!-- Session Items -->
+                            <div class="divide-y divide-gray-200">
+                                <template x-for="session in sessions" :key="session.session_id">
+                                    <button
+                                        @click="selectSession(session.session_id)"
+                                        :class="selectedSessionId === session.session_id ? 'bg-blue-50 border-l-4 border-blue-600' : 'hover:bg-gray-50'"
+                                        class="w-full text-left p-4 transition"
+                                    >
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-medium text-gray-900 truncate" x-text="session.session_id"></p>
+                                                <p class="text-xs text-gray-500 mt-1" x-text="formatDate(session.updated_at)"></p>
+                                            </div>
+                                            <span class="ml-2 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full"
+                                                  x-text="session.message_count"></span>
+                                        </div>
+                                        <div class="mt-2">
+                                            <span class="inline-block px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded"
+                                                  x-text="session.session_type"></span>
+                                        </div>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages Panel -->
+                <div class="col-span-12 lg:col-span-8">
+                    <!-- Empty State -->
+                    <div x-show="!selectedSessionId" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+                        <div class="text-6xl mb-4">👈</div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Select a session</h3>
+                        <p class="text-gray-500">Choose a session from the sidebar to view messages</p>
+                    </div>
+
+                    <!-- Loading Session -->
+                    <div x-show="selectedSessionId && loadingSession" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <p class="mt-4 text-gray-500">Loading messages...</p>
+                    </div>
+
+                    <!-- Messages -->
+                    <div x-show="selectedSessionId && !loadingSession && currentSession" class="space-y-4">
+                        <!-- Session Info -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-gray-900 mb-2" x-text="currentSession?.session_id"></h3>
+                                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                        <span x-text="`Created: ${formatDate(currentSession?.created_at)}`"></span>
+                                        <span x-text="`Updated: ${formatDate(currentSession?.updated_at)}`"></span>
+                                        <span x-text="`Messages: ${currentSession?.messages?.length || 0}`"></span>
+                                        <span x-show="filteredMessages().length !== currentSession?.messages?.length"
+                                              class="text-blue-600 font-medium"
+                                              x-text="`(Showing ${filteredMessages().length})`"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Export Dropdown -->
+                                <div x-data="{ open: false }" class="relative">
+                                    <button
+                                        @click="open = !open"
+                                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center space-x-2"
+                                    >
+                                        <span>📥 Export</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Dropdown Menu -->
+                                    <div
+                                        x-show="open"
+                                        @click.away="open = false"
+                                        x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95"
+                                        class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
+                                    >
+                                        <div class="py-1">
+                                            <button
+                                                @click="exportSession('markdown'); open = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                                            >
+                                                <span>📄</span>
+                                                <span>Markdown (.md)</span>
+                                            </button>
+                                            <button
+                                                @click="exportSession('json'); open = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                                            >
+                                                <span>{ }</span>
+                                                <span>JSON (.json)</span>
+                                            </button>
+                                            <button
+                                                @click="exportSession('text'); open = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                                            >
+                                                <span>📝</span>
+                                                <span>Text (.txt)</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filters & Search -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                            <div class="space-y-3">
+                                <!-- Search -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        🔍 Search in messages
+                                    </label>
+                                    <input
+                                        type="text"
+                                        x-model="searchQuery"
+                                        @input="applyFilters()"
+                                        placeholder="Search for text in messages..."
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                </div>
+
+                                <!-- Filters -->
+                                <div class="flex flex-wrap gap-3">
+                                    <!-- Role Filter -->
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                                        <select
+                                            x-model="filterRole"
+                                            @change="applyFilters()"
+                                            class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                            <option value="all">All Roles</option>
+                                            <option value="user">👤 User Only</option>
+                                            <option value="assistant">🤖 Assistant Only</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Tool Calls Filter -->
+                                    <div class="flex items-end">
+                                        <label class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                            <input
+                                                type="checkbox"
+                                                x-model="filterToolCalls"
+                                                @change="applyFilters()"
+                                                class="rounded text-blue-600 focus:ring-blue-500"
+                                            >
+                                            <span class="text-sm font-medium text-gray-700">🔧 Only Tool Calls</span>
+                                        </label>
+                                    </div>
+
+                                    <!-- Errors Filter -->
+                                    <div class="flex items-end">
+                                        <label class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                            <input
+                                                type="checkbox"
+                                                x-model="filterErrors"
+                                                @change="applyFilters()"
+                                                class="rounded text-blue-600 focus:ring-blue-500"
+                                            >
+                                            <span class="text-sm font-medium text-gray-700">❌ Only Errors</span>
+                                        </label>
+                                    </div>
+
+                                    <!-- Clear Filters -->
+                                    <div class="flex items-end" x-show="hasActiveFilters()">
+                                        <button
+                                            @click="clearFilters()"
+                                            class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                                        >
+                                            Clear All
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Analysis Panel -->
+                        <div x-show="aiAvailable" class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-sm border border-purple-200 p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-semibold text-purple-900 flex items-center space-x-2">
+                                    <span>🤖</span>
+                                    <span>AI Session Analysis</span>
+                                </h3>
+                                <button
+                                    @click="showAIPanel = !showAIPanel"
+                                    class="text-sm text-purple-700 hover:text-purple-900 font-medium"
+                                    x-text="showAIPanel ? 'Hide' : 'Show'">
+                                </button>
+                            </div>
+
+                            <div x-show="showAIPanel" x-transition>
+                                <!-- Quick Actions -->
+                                <div class="grid grid-cols-3 gap-2 mb-4">
+                                    <button
+                                        @click="analyzeSession('summarize')"
+                                        :disabled="analyzingSession"
+                                        class="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium disabled:opacity-50">
+                                        📊 Summarize
+                                    </button>
+                                    <button
+                                        @click="analyzeSession('errors')"
+                                        :disabled="analyzingSession"
+                                        class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium disabled:opacity-50">
+                                        ❌ Analyze Errors
+                                    </button>
+                                    <button
+                                        @click="analyzeSession('improvements')"
+                                        :disabled="analyzingSession"
+                                        class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium disabled:opacity-50">
+                                        💡 Suggest
+                                    </button>
+                                </div>
+
+                                <!-- AI Response -->
+                                <div x-show="aiResponse || analyzingSession" class="bg-white rounded-lg p-4 mb-4 border border-purple-200">
+                                    <div x-show="analyzingSession" class="flex items-center space-x-2 text-purple-600">
+                                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                                        <span class="text-sm">AI is analyzing...</span>
+                                    </div>
+                                    <div x-show="!analyzingSession && aiResponse" class="text-sm text-gray-800 whitespace-pre-wrap" x-text="aiResponse"></div>
+                                </div>
+
+                                <!-- Chat Interface -->
+                                <div class="bg-white rounded-lg p-4 border border-purple-200">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        💬 Ask about this session
+                                    </label>
+                                    <div class="flex space-x-2">
+                                        <input
+                                            type="text"
+                                            x-model="aiQuestion"
+                                            @keyup.enter="askAIQuestion()"
+                                            placeholder="E.g., Why did this tool call fail?"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                                            :disabled="analyzingSession">
+                                        <button
+                                            @click="askAIQuestion()"
+                                            :disabled="!aiQuestion.trim() || analyzingSession"
+                                            class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium disabled:opacity-50">
+                                            Send
+                                        </button>
+                                    </div>
+
+                                    <!-- Chat History -->
+                                    <div x-show="chatHistory.length > 0" class="mt-3 space-y-2 max-h-64 overflow-y-auto">
+                                        <template x-for="(chat, idx) in chatHistory" :key="idx">
+                                            <div class="text-sm">
+                                                <div class="font-medium text-purple-700 mb-1" x-text="'Q: ' + chat.question"></div>
+                                                <div class="text-gray-700 ml-2 pl-2 border-l-2 border-purple-200" x-text="'A: ' + chat.answer"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AI Not Available Message -->
+                            <div x-show="!aiAvailable" class="text-sm text-purple-700">
+                                AI analysis not available. Install with: <code class="bg-purple-100 px-2 py-1 rounded">pip install strands-session-viewer[ai]</code>
+                            </div>
+                        </div>
+
+                        <!-- Message List -->
+                        <div class="space-y-4">
+                            <!-- No results message -->
+                            <div x-show="filteredMessages().length === 0" class="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
+                                <p class="text-yellow-800 font-medium">No messages match your filters</p>
+                                <button @click="clearFilters()" class="mt-2 text-sm text-yellow-700 hover:text-yellow-900 underline">
+                                    Clear filters
+                                </button>
+                            </div>
+
+                            <template x-for="(message, index) in filteredMessages()" :key="message.message_id">
+                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                    <!-- Message Header -->
+                                    <div :class="getMessageHeaderClass(message.message.role)" class="px-4 py-2 flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="font-medium" x-text="getRoleIcon(message.message.role)"></span>
+                                            <span class="font-medium capitalize" x-text="message.message.role"></span>
+                                            <span class="text-xs opacity-75" x-text="`#${message.message_id}`"></span>
+                                        </div>
+                                        <span class="text-xs opacity-75" x-text="formatDate(message.created_at)"></span>
+                                    </div>
+
+                                    <!-- Message Content -->
+                                    <div class="p-4">
+                                        <template x-for="(content, idx) in message.message.content" :key="idx">
+                                            <div class="mb-2 last:mb-0">
+                                                <!-- Text Content -->
+                                                <div x-show="content.text" class="message-content text-gray-800" x-text="content.text"></div>
+
+                                                <!-- Tool Use (Strands format) -->
+                                                <div x-show="content.toolUse" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                                    <div class="flex items-center space-x-2 mb-2">
+                                                        <span class="text-lg">🔧</span>
+                                                        <span class="font-semibold text-yellow-900">Tool Call:</span>
+                                                        <code class="text-sm font-mono bg-yellow-100 px-2 py-1 rounded" x-text="content.toolUse?.name"></code>
+                                                    </div>
+                                                    <details class="text-sm">
+                                                        <summary class="cursor-pointer text-yellow-700 hover:text-yellow-900">View input</summary>
+                                                        <pre class="mt-2 p-2 bg-yellow-100 rounded text-xs overflow-x-auto" x-text="JSON.stringify(content.toolUse?.input, null, 2)"></pre>
+                                                    </details>
+                                                </div>
+
+                                                <!-- Tool Result (Strands format) -->
+                                                <div x-show="content.toolResult" class="rounded-lg p-3"
+                                                     :class="content.toolResult?.status === 'error' ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'">
+                                                    <div class="flex items-center space-x-2 mb-2">
+                                                        <span class="text-lg" x-text="content.toolResult?.status === 'error' ? '❌' : '✅'"></span>
+                                                        <span class="font-semibold" :class="content.toolResult?.status === 'error' ? 'text-red-900' : 'text-green-900'">
+                                                            Tool Result:
+                                                        </span>
+                                                        <code class="text-sm font-mono px-2 py-1 rounded"
+                                                              :class="content.toolResult?.status === 'error' ? 'bg-red-100' : 'bg-green-100'"
+                                                              x-text="content.toolResult?.toolUseId"></code>
+                                                        <span x-show="content.toolResult?.status === 'error'"
+                                                              class="text-xs font-medium text-red-700 px-2 py-1 bg-red-100 rounded">
+                                                            ERROR
+                                                        </span>
+                                                    </div>
+                                                    <details class="text-sm" open>
+                                                        <summary class="cursor-pointer hover:underline"
+                                                                 :class="content.toolResult?.status === 'error' ? 'text-red-700' : 'text-green-700'">
+                                                            View output
+                                                        </summary>
+                                                        <template x-for="resultContent in (Array.isArray(content.toolResult?.content) ? content.toolResult?.content : [content.toolResult?.content])" :key="resultContent">
+                                                            <div class="mt-2">
+                                                                <pre x-show="resultContent?.text" class="p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap"
+                                                                     :class="content.toolResult?.status === 'error' ? 'bg-red-100' : 'bg-green-100'"
+                                                                     x-text="resultContent?.text"></pre>
+                                                                <div x-show="resultContent?.type === 'image'">
+                                                                    <img :src="`data:${resultContent.source?.media_type};base64,${resultContent.source?.data}`"
+                                                                         alt="Tool result image"
+                                                                         class="max-w-full h-auto rounded">
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </details>
+                                                </div>
+
+                                                <!-- Image Content -->
+                                                <div x-show="content.type === 'image'" class="mt-2">
+                                                    <img :src="`data:${content.source?.media_type};base64,${content.source?.data}`"
+                                                         alt="Message image"
+                                                         class="max-w-full h-auto rounded-lg border border-gray-200">
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function sessionViewer() {
+            return {
+                sessions: [],
+                currentSession: null,
+                selectedSessionId: null,
+                loading: false,
+                loadingSession: false,
+
+                // Filter state
+                searchQuery: '',
+                filterRole: 'all',
+                filterToolCalls: false,
+                filterErrors: false,
+
+                // AI Analysis state
+                aiAvailable: false,
+                showAIPanel: true,
+                analyzingSession: false,
+                aiResponse: '',
+                aiQuestion: '',
+                chatHistory: [],
+
+                async init() {
+                    await this.loadSessions();
+                    await this.checkAIStatus();
+                },
+
+                async loadSessions() {
+                    this.loading = true;
+                    try {
+                        const response = await fetch('/api/sessions');
+                        const data = await response.json();
+                        if (data.success) {
+                            this.sessions = data.sessions;
+                        }
+                    } catch (error) {
+                        console.error('Error loading sessions:', error);
+                        alert('Failed to load sessions');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async selectSession(sessionId) {
+                    this.selectedSessionId = sessionId;
+                    this.loadingSession = true;
+                    this.clearFilters(); // Reset filters when switching sessions
+                    try {
+                        const response = await fetch(`/api/sessions/${sessionId}`);
+                        const data = await response.json();
+                        if (data.success) {
+                            this.currentSession = data.session;
+                        }
+                    } catch (error) {
+                        console.error('Error loading session:', error);
+                        alert('Failed to load session details');
+                    } finally {
+                        this.loadingSession = false;
+                    }
+                },
+
+                filteredMessages() {
+                    if (!this.currentSession?.messages) return [];
+
+                    let messages = this.currentSession.messages;
+
+                    // Filter by role
+                    if (this.filterRole !== 'all') {
+                        messages = messages.filter(msg => msg.message.role === this.filterRole);
+                    }
+
+                    // Filter by tool calls
+                    if (this.filterToolCalls) {
+                        messages = messages.filter(msg => {
+                            return msg.message.content.some(content =>
+                                content.toolUse || content.toolResult
+                            );
+                        });
+                    }
+
+                    // Filter by errors
+                    if (this.filterErrors) {
+                        messages = messages.filter(msg => {
+                            return msg.message.content.some(content =>
+                                content.toolResult?.status === 'error'
+                            );
+                        });
+                    }
+
+                    // Search query
+                    if (this.searchQuery.trim()) {
+                        const query = this.searchQuery.toLowerCase();
+                        messages = messages.filter(msg => {
+                            // Search in text content
+                            const hasTextMatch = msg.message.content.some(content => {
+                                if (content.text) {
+                                    return content.text.toLowerCase().includes(query);
+                                }
+                                return false;
+                            });
+
+                            // Search in tool names
+                            const hasToolMatch = msg.message.content.some(content => {
+                                if (content.toolUse?.name) {
+                                    return content.toolUse.name.toLowerCase().includes(query);
+                                }
+                                return false;
+                            });
+
+                            // Search in tool results
+                            const hasResultMatch = msg.message.content.some(content => {
+                                if (content.toolResult?.content) {
+                                    return content.toolResult.content.some(resultContent => {
+                                        if (resultContent.text) {
+                                            return resultContent.text.toLowerCase().includes(query);
+                                        }
+                                        return false;
+                                    });
+                                }
+                                return false;
+                            });
+
+                            return hasTextMatch || hasToolMatch || hasResultMatch;
+                        });
+                    }
+
+                    return messages;
+                },
+
+                applyFilters() {
+                    // Trigger reactivity by accessing filteredMessages
+                    // Alpine will automatically re-render when filter state changes
+                },
+
+                clearFilters() {
+                    this.searchQuery = '';
+                    this.filterRole = 'all';
+                    this.filterToolCalls = false;
+                    this.filterErrors = false;
+                },
+
+                hasActiveFilters() {
+                    return this.searchQuery.trim() !== '' ||
+                           this.filterRole !== 'all' ||
+                           this.filterToolCalls ||
+                           this.filterErrors;
+                },
+
+                exportSession(format) {
+                    if (!this.selectedSessionId) {
+                        alert('No session selected');
+                        return;
+                    }
+
+                    // Download the file by opening the export URL
+                    const url = `/api/sessions/${this.selectedSessionId}/export?format=${format}`;
+                    window.location.href = url;
+                },
+
+                formatDate(dateString) {
+                    if (!dateString) return 'N/A';
+                    const date = new Date(dateString);
+                    return date.toLocaleString();
+                },
+
+                getRoleIcon(role) {
+                    const icons = {
+                        'user': '👤',
+                        'assistant': '🤖',
+                        'system': '⚙️'
+                    };
+                    return icons[role] || '💬';
+                },
+
+                getMessageHeaderClass(role) {
+                    const classes = {
+                        'user': 'bg-blue-100 text-blue-900',
+                        'assistant': 'bg-purple-100 text-purple-900',
+                        'system': 'bg-gray-100 text-gray-900'
+                    };
+                    return classes[role] || 'bg-gray-100 text-gray-900';
+                },
+
+                // AI Analysis Methods
+                async checkAIStatus() {
+                    try {
+                        const response = await fetch('/api/ai/status');
+                        const data = await response.json();
+                        this.aiAvailable = data.available;
+                    } catch (error) {
+                        console.error('Error checking AI status:', error);
+                        this.aiAvailable = false;
+                    }
+                },
+
+                async analyzeSession(analysisType) {
+                    if (!this.selectedSessionId) {
+                        alert('No session selected');
+                        return;
+                    }
+
+                    this.analyzingSession = true;
+                    this.aiResponse = '';
+
+                    try {
+                        const response = await fetch(`/api/sessions/${this.selectedSessionId}/analyze`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ analysis_type: analysisType })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.status === 503) {
+                            alert('AI analysis not available. Install with: pip install strands-session-viewer[ai]');
+                            return;
+                        }
+
+                        if (data.success) {
+                            this.aiResponse = data.analysis;
+                        } else {
+                            alert('Failed to analyze session');
+                        }
+                    } catch (error) {
+                        console.error('Error analyzing session:', error);
+                        alert('Failed to analyze session');
+                    } finally {
+                        this.analyzingSession = false;
+                    }
+                },
+
+                async askAIQuestion() {
+                    if (!this.aiQuestion.trim() || !this.selectedSessionId) {
+                        return;
+                    }
+
+                    const question = this.aiQuestion.trim();
+                    this.analyzingSession = true;
+                    this.aiResponse = '';
+
+                    try {
+                        const response = await fetch(`/api/sessions/${this.selectedSessionId}/chat`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                question: question,
+                                chat_history: this.chatHistory.map(chat => ({
+                                    role: 'user',
+                                    content: chat.question
+                                })).concat(this.chatHistory.map(chat => ({
+                                    role: 'assistant',
+                                    content: chat.answer
+                                })))
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.status === 503) {
+                            alert('AI analysis not available. Install with: pip install strands-session-viewer[ai]');
+                            return;
+                        }
+
+                        if (data.success) {
+                            // Add to chat history
+                            this.chatHistory.push({
+                                question: question,
+                                answer: data.answer
+                            });
+
+                            // Show latest answer
+                            this.aiResponse = data.answer;
+
+                            // Clear question input
+                            this.aiQuestion = '';
+                        } else {
+                            alert('Failed to get AI response');
+                        }
+                    } catch (error) {
+                        console.error('Error asking AI:', error);
+                        alert('Failed to get AI response');
+                    } finally {
+                        this.analyzingSession = false;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

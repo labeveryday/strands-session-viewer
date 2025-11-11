@@ -23,436 +23,384 @@
             font-family: ui-monospace, monospace;
             font-size: 0.875rem;
         }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
-    <div x-data="sessionViewer()" x-cloak class="min-h-screen">
+    <div x-data="sessionViewer()" x-cloak class="h-screen flex flex-col">
         <!-- Header -->
-        <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
-            <div class="max-w-7xl mx-auto px-4 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <h1 class="text-2xl font-bold text-gray-900">🤖 Strands Session Viewer</h1>
-                        <span x-show="sessions.length > 0" class="text-sm text-gray-500" x-text="`${sessions.length} sessions`"></span>
-                    </div>
-                    <button @click="loadSessions()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                        🔄 Refresh
+        <header class="bg-white border-b border-gray-200 shadow-sm z-20">
+            <div class="flex items-center justify-between px-4 py-3">
+                <div class="flex items-center space-x-3">
+                    <!-- Hamburger Menu -->
+                    <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-gray-100 rounded-lg transition lg:hidden">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
                     </button>
+                    <button @click="sidebarOpen = !sidebarOpen" class="hidden lg:block p-2 hover:bg-gray-100 rounded-lg transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <h1 class="text-xl lg:text-2xl font-bold text-gray-900">🤖 Strands Session Viewer</h1>
+                    <span x-show="sessions.length > 0" class="hidden sm:inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full" x-text="`${sessions.length}`"></span>
                 </div>
+                <button @click="loadSessions()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                    🔄 Refresh
+                </button>
             </div>
         </header>
 
-        <!-- Main Content -->
-        <div class="max-w-7xl mx-auto px-4 py-6">
-            <div class="grid grid-cols-12 gap-6">
-                <!-- Session List Sidebar -->
-                <div class="col-span-12 lg:col-span-4">
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-20">
-                        <div class="p-4 border-b border-gray-200">
-                            <h2 class="text-lg font-semibold text-gray-900">Sessions</h2>
-                        </div>
-                        <div class="overflow-y-auto max-h-[calc(100vh-12rem)]">
-                            <!-- Loading State -->
-                            <div x-show="loading && sessions.length === 0" class="p-8 text-center">
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                <p class="mt-2 text-sm text-gray-500">Loading sessions...</p>
-                            </div>
-
-                            <!-- Empty State -->
-                            <div x-show="!loading && sessions.length === 0" class="p-8 text-center">
-                                <p class="text-gray-500">No sessions found</p>
-                            </div>
-
-                            <!-- Session Items -->
-                            <div class="divide-y divide-gray-200">
-                                <template x-for="session in sessions" :key="session.session_id">
-                                    <button
-                                        @click="selectSession(session.session_id)"
-                                        :class="selectedSessionId === session.session_id ? 'bg-blue-50 border-l-4 border-blue-600' : 'hover:bg-gray-50'"
-                                        class="w-full text-left p-4 transition"
-                                    >
-                                        <div class="flex items-start justify-between">
-                                            <div class="flex-1 min-w-0">
-                                                <p class="font-medium text-gray-900 truncate" x-text="session.session_id"></p>
-                                                <p class="text-xs text-gray-500 mt-1" x-text="formatDate(session.updated_at)"></p>
-                                            </div>
-                                            <span class="ml-2 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full"
-                                                  x-text="session.message_count"></span>
-                                        </div>
-                                        <div class="mt-2">
-                                            <span class="inline-block px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded"
-                                                  x-text="session.session_type"></span>
-                                        </div>
-                                    </button>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Main Three-Panel Layout -->
+        <div class="flex-1 flex overflow-hidden">
+            <!-- Left Sidebar (Sessions) -->
+            <aside
+                x-show="sidebarOpen"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="-translate-x-full"
+                x-transition:enter-end="translate-x-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="translate-x-0"
+                x-transition:leave-end="-translate-x-full"
+                class="w-80 bg-white border-r border-gray-200 flex-shrink-0 overflow-hidden flex flex-col lg:relative absolute lg:translate-x-0 z-10 h-full"
+            >
+                <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">Sessions</h2>
+                    <button @click="sidebarOpen = false" class="lg:hidden p-1 hover:bg-gray-100 rounded">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
 
-                <!-- Messages Panel -->
-                <div class="col-span-12 lg:col-span-8">
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <!-- Loading State -->
+                    <div x-show="loading && sessions.length === 0" class="p-8 text-center">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                        <p class="mt-2 text-sm text-gray-500">Loading sessions...</p>
+                    </div>
+
                     <!-- Empty State -->
-                    <div x-show="!selectedSessionId" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+                    <div x-show="!loading && sessions.length === 0" class="p-8 text-center">
+                        <p class="text-gray-500 text-sm">No sessions found</p>
+                    </div>
+
+                    <!-- Session Items -->
+                    <div class="divide-y divide-gray-200">
+                        <template x-for="session in sessions" :key="session.session_id">
+                            <button
+                                @click="selectSession(session.session_id); sidebarOpen = false"
+                                :class="selectedSessionId === session.session_id ? 'bg-blue-50 border-l-4 border-blue-600' : 'hover:bg-gray-50 border-l-4 border-transparent'"
+                                class="w-full text-left p-4 transition"
+                            >
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-medium text-gray-900 truncate text-sm" x-text="session.session_id"></p>
+                                        <p class="text-xs text-gray-500 mt-1" x-text="formatDate(session.updated_at)"></p>
+                                    </div>
+                                    <span class="ml-2 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full" x-text="session.message_count"></span>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="inline-block px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded" x-text="session.session_type"></span>
+                                </div>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Overlay for mobile -->
+            <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black bg-opacity-50 z-0 lg:hidden"></div>
+
+            <!-- Middle Panel (Messages) -->
+            <main class="flex-1 overflow-hidden flex flex-col bg-gray-50">
+                <!-- Empty State -->
+                <div x-show="!selectedSessionId" class="flex-1 flex items-center justify-center p-8">
+                    <div class="text-center">
                         <div class="text-6xl mb-4">👈</div>
                         <h3 class="text-xl font-semibold text-gray-900 mb-2">Select a session</h3>
                         <p class="text-gray-500">Choose a session from the sidebar to view messages</p>
                     </div>
+                </div>
 
-                    <!-- Loading Session -->
-                    <div x-show="selectedSessionId && loadingSession" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p class="mt-4 text-gray-500">Loading messages...</p>
+                <!-- Session Content -->
+                <div x-show="selectedSessionId" class="flex-1 overflow-hidden flex flex-col">
+                    <!-- Session Info Header -->
+                    <div class="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h2 class="text-xl font-bold text-gray-900" x-text="selectedSession?.session_id"></h2>
+                                <div class="mt-2 flex flex-wrap gap-2 text-sm text-gray-600">
+                                    <span>Created: <span x-text="formatDate(selectedSession?.created_at)"></span></span>
+                                    <span class="text-gray-300">|</span>
+                                    <span>Updated: <span x-text="formatDate(selectedSession?.updated_at)"></span></span>
+                                    <span class="text-gray-300">|</span>
+                                    <span>Messages: <span x-text="selectedSession?.message_count"></span></span>
+                                </div>
+                            </div>
+                            <!-- Export Button -->
+                            <div class="relative" x-data="{ exportOpen: false }">
+                                <button @click="exportOpen = !exportOpen" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium flex items-center space-x-2">
+                                    <span>📥 Export</span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                <div x-show="exportOpen" @click.away="exportOpen = false" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                                    <button @click="exportSession('markdown'); exportOpen = false" class="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📄 Markdown</button>
+                                    <button @click="exportSession('json'); exportOpen = false" class="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📋 JSON</button>
+                                    <button @click="exportSession('text'); exportOpen = false" class="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📝 Plain Text</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Messages -->
-                    <div x-show="selectedSessionId && !loadingSession && currentSession" class="space-y-4">
-                        <!-- Session Info -->
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                            <div class="flex items-start justify-between">
-                                <div class="flex-1">
-                                    <h3 class="font-semibold text-gray-900 mb-2" x-text="currentSession?.session_id"></h3>
-                                    <div class="flex items-center space-x-4 text-sm text-gray-500">
-                                        <span x-text="`Created: ${formatDate(currentSession?.created_at)}`"></span>
-                                        <span x-text="`Updated: ${formatDate(currentSession?.updated_at)}`"></span>
-                                        <span x-text="`Messages: ${currentSession?.messages?.length || 0}`"></span>
-                                        <span x-show="filteredMessages().length !== currentSession?.messages?.length"
-                                              class="text-blue-600 font-medium"
-                                              x-text="`(Showing ${filteredMessages().length})`"></span>
-                                    </div>
-                                </div>
-
-                                <!-- Export Dropdown -->
-                                <div x-data="{ open: false }" class="relative">
-                                    <button
-                                        @click="open = !open"
-                                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center space-x-2"
-                                    >
-                                        <span>📥 Export</span>
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                        </svg>
-                                    </button>
-
-                                    <!-- Dropdown Menu -->
-                                    <div
-                                        x-show="open"
-                                        @click.away="open = false"
-                                        x-transition:enter="transition ease-out duration-100"
-                                        x-transition:enter-start="transform opacity-0 scale-95"
-                                        x-transition:enter-end="transform opacity-100 scale-100"
-                                        x-transition:leave="transition ease-in duration-75"
-                                        x-transition:leave-start="transform opacity-100 scale-100"
-                                        x-transition:leave-end="transform opacity-0 scale-95"
-                                        class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
-                                    >
-                                        <div class="py-1">
-                                            <button
-                                                @click="exportSession('markdown'); open = false"
-                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                                            >
-                                                <span>📄</span>
-                                                <span>Markdown (.md)</span>
-                                            </button>
-                                            <button
-                                                @click="exportSession('json'); open = false"
-                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                                            >
-                                                <span>{ }</span>
-                                                <span>JSON (.json)</span>
-                                            </button>
-                                            <button
-                                                @click="exportSession('text'); open = false"
-                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                                            >
-                                                <span>📝</span>
-                                                <span>Text (.txt)</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                    <!-- Search and Filters -->
+                    <div class="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+                        <div class="flex flex-col lg:flex-row gap-3">
+                            <!-- Search -->
+                            <div class="flex-1">
+                                <input
+                                    type="text"
+                                    x-model="searchQuery"
+                                    @input="applyFilters()"
+                                    placeholder="Search for text in messages..."
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                />
                             </div>
-                        </div>
 
-                        <!-- Filters & Search -->
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                            <div class="space-y-3">
-                                <!-- Search -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        🔍 Search in messages
-                                    </label>
-                                    <input
-                                        type="text"
-                                        x-model="searchQuery"
-                                        @input="applyFilters()"
-                                        placeholder="Search for text in messages..."
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    >
-                                </div>
+                            <!-- Filters -->
+                            <div class="flex gap-2 items-center">
+                                <select x-model="filterRole" @change="applyFilters()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option value="all">All Roles</option>
+                                    <option value="user">User</option>
+                                    <option value="assistant">Assistant</option>
+                                </select>
 
-                                <!-- Filters -->
-                                <div class="flex flex-wrap gap-3">
-                                    <!-- Role Filter -->
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">Role</label>
-                                        <select
-                                            x-model="filterRole"
-                                            @change="applyFilters()"
-                                            class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        >
-                                            <option value="all">All Roles</option>
-                                            <option value="user">👤 User Only</option>
-                                            <option value="assistant">🤖 Assistant Only</option>
-                                        </select>
-                                    </div>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" x-model="filterToolCalls" @change="applyFilters()" class="rounded">
+                                    <span>🔧 Only Tool Calls</span>
+                                </label>
 
-                                    <!-- Tool Calls Filter -->
-                                    <div class="flex items-end">
-                                        <label class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                                            <input
-                                                type="checkbox"
-                                                x-model="filterToolCalls"
-                                                @change="applyFilters()"
-                                                class="rounded text-blue-600 focus:ring-blue-500"
-                                            >
-                                            <span class="text-sm font-medium text-gray-700">🔧 Only Tool Calls</span>
-                                        </label>
-                                    </div>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" x-model="filterErrors" @change="applyFilters()" class="rounded">
+                                    <span>❌ Only Errors</span>
+                                </label>
 
-                                    <!-- Errors Filter -->
-                                    <div class="flex items-end">
-                                        <label class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                                            <input
-                                                type="checkbox"
-                                                x-model="filterErrors"
-                                                @change="applyFilters()"
-                                                class="rounded text-blue-600 focus:ring-blue-500"
-                                            >
-                                            <span class="text-sm font-medium text-gray-700">❌ Only Errors</span>
-                                        </label>
-                                    </div>
-
-                                    <!-- Clear Filters -->
-                                    <div class="flex items-end" x-show="hasActiveFilters()">
-                                        <button
-                                            @click="clearFilters()"
-                                            class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
-                                        >
-                                            Clear All
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- AI Analysis Panel -->
-                        <div x-show="aiAvailable" class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-sm border border-purple-200 p-4">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-lg font-semibold text-purple-900 flex items-center space-x-2">
-                                    <span>🤖</span>
-                                    <span>AI Session Analysis</span>
-                                </h3>
-                                <button
-                                    @click="showAIPanel = !showAIPanel"
-                                    class="text-sm text-purple-700 hover:text-purple-900 font-medium"
-                                    x-text="showAIPanel ? 'Hide' : 'Show'">
+                                <button x-show="hasActiveFilters()" @click="clearFilters()" class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">
+                                    Clear
                                 </button>
                             </div>
-
-                            <div x-show="showAIPanel" x-transition>
-                                <!-- Quick Actions -->
-                                <div class="grid grid-cols-3 gap-2 mb-4">
-                                    <button
-                                        @click="analyzeSession('summarize')"
-                                        :disabled="analyzingSession"
-                                        class="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium disabled:opacity-50">
-                                        📊 Summarize
-                                    </button>
-                                    <button
-                                        @click="analyzeSession('errors')"
-                                        :disabled="analyzingSession"
-                                        class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium disabled:opacity-50">
-                                        ❌ Analyze Errors
-                                    </button>
-                                    <button
-                                        @click="analyzeSession('improvements')"
-                                        :disabled="analyzingSession"
-                                        class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium disabled:opacity-50">
-                                        💡 Suggest
-                                    </button>
-                                </div>
-
-                                <!-- AI Response -->
-                                <div x-show="aiResponse || analyzingSession" class="bg-white rounded-lg p-4 mb-4 border border-purple-200">
-                                    <div x-show="analyzingSession" class="flex items-center space-x-2 text-purple-600">
-                                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
-                                        <span class="text-sm">AI is analyzing...</span>
-                                    </div>
-                                    <div x-show="!analyzingSession && aiResponse" class="text-sm text-gray-800 whitespace-pre-wrap" x-text="aiResponse"></div>
-                                </div>
-
-                                <!-- Chat Interface -->
-                                <div class="bg-white rounded-lg p-4 border border-purple-200">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        💬 Ask about this session
-                                    </label>
-                                    <div class="flex space-x-2">
-                                        <input
-                                            type="text"
-                                            x-model="aiQuestion"
-                                            @keyup.enter="askAIQuestion()"
-                                            placeholder="E.g., Why did this tool call fail?"
-                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                                            :disabled="analyzingSession">
-                                        <button
-                                            @click="askAIQuestion()"
-                                            :disabled="!aiQuestion.trim() || analyzingSession"
-                                            class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium disabled:opacity-50">
-                                            Send
-                                        </button>
-                                    </div>
-
-                                    <!-- Chat History -->
-                                    <div x-show="chatHistory.length > 0" class="mt-3 space-y-2 max-h-64 overflow-y-auto">
-                                        <template x-for="(chat, idx) in chatHistory" :key="idx">
-                                            <div class="text-sm">
-                                                <div class="font-medium text-purple-700 mb-1" x-text="'Q: ' + chat.question"></div>
-                                                <div class="text-gray-700 ml-2 pl-2 border-l-2 border-purple-200" x-text="'A: ' + chat.answer"></div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- AI Not Available Message -->
-                            <div x-show="!aiAvailable" class="text-sm text-purple-700">
-                                AI analysis not available. Install with: <code class="bg-purple-100 px-2 py-1 rounded">pip install strands-session-viewer[ai]</code>
-                            </div>
                         </div>
+                    </div>
 
-                        <!-- Message List -->
-                        <div class="space-y-4">
-                            <!-- No results message -->
-                            <div x-show="filteredMessages().length === 0" class="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
-                                <p class="text-yellow-800 font-medium">No messages match your filters</p>
-                                <button @click="clearFilters()" class="mt-2 text-sm text-yellow-700 hover:text-yellow-900 underline">
-                                    Clear filters
-                                </button>
-                            </div>
+                    <!-- Messages Timeline -->
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+                        <template x-for="(message, index) in filteredMessages" :key="index">
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                <!-- Message Header -->
+                                <div :class="getMessageHeaderClass(message.message.role)" class="px-4 py-3 flex items-center space-x-2">
+                                    <span x-text="getRoleIcon(message.message.role)" class="text-lg"></span>
+                                    <span class="font-semibold capitalize" x-text="message.message.role"></span>
+                                    <span class="text-xs opacity-75">Message #<span x-text="index + 1"></span></span>
+                                </div>
 
-                            <template x-for="(message, index) in filteredMessages()" :key="message.message_id">
-                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                                    <!-- Message Header -->
-                                    <div :class="getMessageHeaderClass(message.message.role)" class="px-4 py-2 flex items-center justify-between">
-                                        <div class="flex items-center space-x-2">
-                                            <span class="font-medium" x-text="getRoleIcon(message.message.role)"></span>
-                                            <span class="font-medium capitalize" x-text="message.message.role"></span>
-                                            <span class="text-xs opacity-75" x-text="`#${message.message_id}`"></span>
-                                        </div>
-                                        <span class="text-xs opacity-75" x-text="formatDate(message.created_at)"></span>
-                                    </div>
+                                <!-- Message Content -->
+                                <div class="p-4 space-y-3">
+                                    <template x-for="(content, contentIndex) in message.message.content" :key="contentIndex">
+                                        <div>
+                                            <!-- Text Content -->
+                                            <div x-show="content.text" class="message-content text-gray-800" x-text="content.text"></div>
 
-                                    <!-- Message Content -->
-                                    <div class="p-4">
-                                        <template x-for="(content, idx) in message.message.content" :key="idx">
-                                            <div class="mb-2 last:mb-0">
-                                                <!-- Text Content -->
-                                                <div x-show="content.text" class="message-content text-gray-800" x-text="content.text"></div>
-
-                                                <!-- Tool Use (Strands format) -->
-                                                <div x-show="content.toolUse" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                                                    <div class="flex items-center space-x-2 mb-2">
-                                                        <span class="text-lg">🔧</span>
-                                                        <span class="font-semibold text-yellow-900">Tool Call:</span>
-                                                        <code class="text-sm font-mono bg-yellow-100 px-2 py-1 rounded" x-text="content.toolUse?.name"></code>
+                                            <!-- Tool Use -->
+                                            <div x-show="content.toolUse" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                                <div class="flex items-start space-x-2">
+                                                    <span class="text-yellow-600">🔧</span>
+                                                    <div class="flex-1">
+                                                        <p class="font-semibold text-yellow-900 text-sm">Tool Call: <span x-text="content.toolUse?.name"></span></p>
+                                                        <p class="text-xs text-yellow-700 mt-1">ID: <span x-text="content.toolUse?.toolUseId"></span></p>
+                                                        <details class="mt-2">
+                                                            <summary class="cursor-pointer text-xs text-yellow-700 hover:text-yellow-900">Show Input</summary>
+                                                            <pre class="tool-call text-xs mt-2 p-2 bg-white rounded border border-yellow-200 overflow-x-auto" x-text="JSON.stringify(content.toolUse?.input, null, 2)"></pre>
+                                                        </details>
                                                     </div>
-                                                    <details class="text-sm">
-                                                        <summary class="cursor-pointer text-yellow-700 hover:text-yellow-900">View input</summary>
-                                                        <pre class="mt-2 p-2 bg-yellow-100 rounded text-xs overflow-x-auto" x-text="JSON.stringify(content.toolUse?.input, null, 2)"></pre>
-                                                    </details>
                                                 </div>
+                                            </div>
 
-                                                <!-- Tool Result (Strands format) -->
-                                                <div x-show="content.toolResult" class="rounded-lg p-3"
-                                                     :class="content.toolResult?.status === 'error' ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'">
-                                                    <div class="flex items-center space-x-2 mb-2">
-                                                        <span class="text-lg" x-text="content.toolResult?.status === 'error' ? '❌' : '✅'"></span>
-                                                        <span class="font-semibold" :class="content.toolResult?.status === 'error' ? 'text-red-900' : 'text-green-900'">
-                                                            Tool Result:
-                                                        </span>
-                                                        <code class="text-sm font-mono px-2 py-1 rounded"
-                                                              :class="content.toolResult?.status === 'error' ? 'bg-red-100' : 'bg-green-100'"
-                                                              x-text="content.toolResult?.toolUseId"></code>
-                                                        <span x-show="content.toolResult?.status === 'error'"
-                                                              class="text-xs font-medium text-red-700 px-2 py-1 bg-red-100 rounded">
-                                                            ERROR
-                                                        </span>
-                                                    </div>
-                                                    <details class="text-sm" open>
-                                                        <summary class="cursor-pointer hover:underline"
-                                                                 :class="content.toolResult?.status === 'error' ? 'text-red-700' : 'text-green-700'">
-                                                            View output
-                                                        </summary>
-                                                        <template x-for="resultContent in (Array.isArray(content.toolResult?.content) ? content.toolResult?.content : [content.toolResult?.content])" :key="resultContent">
+                                            <!-- Tool Result -->
+                                            <div x-show="content.toolResult" :class="content.toolResult?.status === 'error' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'" class="border rounded-lg p-3">
+                                                <div class="flex items-start space-x-2">
+                                                    <span x-text="content.toolResult?.status === 'error' ? '❌' : '✅'"></span>
+                                                    <div class="flex-1">
+                                                        <p :class="content.toolResult?.status === 'error' ? 'text-red-900' : 'text-green-900'" class="font-semibold text-sm">
+                                                            Tool Result: <span x-text="content.toolResult?.status"></span>
+                                                        </p>
+                                                        <p :class="content.toolResult?.status === 'error' ? 'text-red-700' : 'text-green-700'" class="text-xs mt-1">
+                                                            ID: <span x-text="content.toolResult?.toolUseId"></span>
+                                                        </p>
+                                                        <template x-for="(resultContent, idx) in content.toolResult?.content" :key="idx">
                                                             <div class="mt-2">
-                                                                <pre x-show="resultContent?.text" class="p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap"
-                                                                     :class="content.toolResult?.status === 'error' ? 'bg-red-100' : 'bg-green-100'"
-                                                                     x-text="resultContent?.text"></pre>
-                                                                <div x-show="resultContent?.type === 'image'">
-                                                                    <img :src="`data:${resultContent.source?.media_type};base64,${resultContent.source?.data}`"
-                                                                         alt="Tool result image"
-                                                                         class="max-w-full h-auto rounded">
-                                                                </div>
+                                                                <pre x-show="resultContent.text" class="tool-call text-xs p-2 bg-white rounded border overflow-x-auto" :class="content.toolResult?.status === 'error' ? 'border-red-200' : 'border-green-200'" x-text="resultContent.text"></pre>
                                                             </div>
                                                         </template>
-                                                    </details>
-                                                </div>
-
-                                                <!-- Image Content -->
-                                                <div x-show="content.type === 'image'" class="mt-2">
-                                                    <img :src="`data:${content.source?.media_type};base64,${content.source?.data}`"
-                                                         alt="Message image"
-                                                         class="max-w-full h-auto rounded-lg border border-gray-200">
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </template>
-                                    </div>
+                                        </div>
+                                    </template>
                                 </div>
-                            </template>
+                            </div>
+                        </template>
+
+                        <!-- No Messages -->
+                        <div x-show="filteredMessages.length === 0 && !loading" class="text-center py-8 text-gray-500">
+                            <p x-show="hasActiveFilters()">No messages match your filters</p>
+                            <p x-show="!hasActiveFilters()">No messages in this session</p>
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
+
+            <!-- Right Panel (AI Chat) - Only when AI Available -->
+            <aside x-show="aiAvailable && selectedSessionId" class="hidden xl:flex w-96 bg-white border-l border-gray-200 flex-col flex-shrink-0">
+                <!-- AI Panel Header -->
+                <div class="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-purple-200 p-4 flex-shrink-0">
+                    <h3 class="text-lg font-semibold text-purple-900 flex items-center space-x-2">
+                        <span>🤖</span>
+                        <span>AI Analysis</span>
+                    </h3>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="p-4 border-b border-gray-200 flex-shrink-0">
+                    <div class="grid grid-cols-3 gap-2">
+                        <button @click="analyzeSession('summarize')" :disabled="analyzingSession" class="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-xs font-medium disabled:opacity-50">
+                            📊 Summarize
+                        </button>
+                        <button @click="analyzeSession('errors')" :disabled="analyzingSession" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-xs font-medium disabled:opacity-50">
+                            ❌ Errors
+                        </button>
+                        <button @click="analyzeSession('improvements')" :disabled="analyzingSession" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-xs font-medium disabled:opacity-50">
+                            💡 Suggest
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analysis Results / Chat History -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+                    <!-- Loading -->
+                    <div x-show="analyzingSession" class="flex items-center justify-center py-8">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    </div>
+
+                    <!-- Latest Response -->
+                    <div x-show="aiResponse && !analyzingSession" class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div class="flex items-start space-x-2">
+                            <span class="text-purple-600">🤖</span>
+                            <div class="flex-1 text-sm text-gray-800 message-content" x-text="aiResponse"></div>
+                        </div>
+                    </div>
+
+                    <!-- Chat History -->
+                    <template x-for="(chat, index) in chatHistory" :key="index">
+                        <div class="space-y-2">
+                            <!-- Question -->
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <div class="flex items-start space-x-2">
+                                    <span class="text-blue-600">👤</span>
+                                    <div class="flex-1 text-sm text-gray-800" x-text="chat.question"></div>
+                                </div>
+                            </div>
+                            <!-- Answer -->
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                <div class="flex items-start space-x-2">
+                                    <span class="text-purple-600">🤖</span>
+                                    <div class="flex-1 text-sm text-gray-800 message-content" x-text="chat.answer"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Empty State -->
+                    <div x-show="!aiResponse && !analyzingSession && chatHistory.length === 0" class="text-center py-8 text-gray-500 text-sm">
+                        <p>Click a button above or ask a question below</p>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="border-t border-gray-200 p-4 flex-shrink-0">
+                    <div class="flex items-center space-x-2">
+                        <input
+                            type="text"
+                            x-model="aiQuestion"
+                            @keyup.enter="askAIQuestion()"
+                            :disabled="analyzingSession"
+                            placeholder="Ask about this session..."
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm disabled:opacity-50"
+                        />
+                        <button @click="askAIQuestion()" :disabled="analyzingSession || !aiQuestion.trim()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium disabled:opacity-50">
+                            Send
+                        </button>
+                    </div>
+                    <button x-show="chatHistory.length > 0" @click="chatHistory = []; aiResponse = ''" class="mt-2 text-xs text-gray-500 hover:text-gray-700">
+                        Clear Chat
+                    </button>
+                </div>
+            </aside>
         </div>
     </div>
 
     <script>
         function sessionViewer() {
             return {
-                sessions: [],
-                currentSession: null,
-                selectedSessionId: null,
+                // UI State
+                sidebarOpen: window.innerWidth >= 1024,
                 loading: false,
-                loadingSession: false,
+                sessions: [],
+                selectedSessionId: null,
+                selectedSession: null,
+                messages: [],
 
-                // Filter state
+                // Filter State
                 searchQuery: '',
                 filterRole: 'all',
                 filterToolCalls: false,
                 filterErrors: false,
 
-                // AI Analysis state
+                // AI State
                 aiAvailable: false,
-                showAIPanel: true,
                 analyzingSession: false,
                 aiResponse: '',
                 aiQuestion: '',
                 chatHistory: [],
+                showAIPanel: true,
 
                 async init() {
                     await this.loadSessions();
                     await this.checkAIStatus();
+
+                    // Auto-select first session if available
+                    if (this.sessions.length > 0) {
+                        await this.selectSession(this.sessions[0].session_id);
+                    }
                 },
 
                 async loadSessions() {
@@ -465,7 +413,6 @@
                         }
                     } catch (error) {
                         console.error('Error loading sessions:', error);
-                        alert('Failed to load sessions');
                     } finally {
                         this.loading = false;
                     }
@@ -473,81 +420,67 @@
 
                 async selectSession(sessionId) {
                     this.selectedSessionId = sessionId;
-                    this.loadingSession = true;
-                    this.clearFilters(); // Reset filters when switching sessions
+                    this.loading = true;
+                    this.clearFilters();
+                    this.aiResponse = '';
+                    this.chatHistory = [];
+
                     try {
                         const response = await fetch(`/api/sessions/${sessionId}`);
                         const data = await response.json();
+
                         if (data.success) {
-                            this.currentSession = data.session;
+                            this.selectedSession = data.session;
+                            this.messages = data.session.messages || [];
                         }
                     } catch (error) {
                         console.error('Error loading session:', error);
-                        alert('Failed to load session details');
                     } finally {
-                        this.loadingSession = false;
+                        this.loading = false;
                     }
                 },
 
-                filteredMessages() {
-                    if (!this.currentSession?.messages) return [];
-
-                    let messages = this.currentSession.messages;
+                get filteredMessages() {
+                    let messages = this.messages;
 
                     // Filter by role
                     if (this.filterRole !== 'all') {
-                        messages = messages.filter(msg => msg.message.role === this.filterRole);
+                        messages = messages.filter(m => m.message.role === this.filterRole);
                     }
 
                     // Filter by tool calls
                     if (this.filterToolCalls) {
-                        messages = messages.filter(msg => {
-                            return msg.message.content.some(content =>
-                                content.toolUse || content.toolResult
-                            );
+                        messages = messages.filter(m => {
+                            return m.message.content.some(c => c.toolUse || c.toolResult);
                         });
                     }
 
                     // Filter by errors
                     if (this.filterErrors) {
-                        messages = messages.filter(msg => {
-                            return msg.message.content.some(content =>
-                                content.toolResult?.status === 'error'
-                            );
+                        messages = messages.filter(m => {
+                            return m.message.content.some(c => {
+                                return c.toolResult && c.toolResult.status === 'error';
+                            });
                         });
                     }
 
-                    // Search query
+                    // Filter by search query
                     if (this.searchQuery.trim()) {
                         const query = this.searchQuery.toLowerCase();
-                        messages = messages.filter(msg => {
-                            // Search in text content
-                            const hasTextMatch = msg.message.content.some(content => {
-                                if (content.text) {
-                                    return content.text.toLowerCase().includes(query);
-                                }
-                                return false;
+                        messages = messages.filter(m => {
+                            const hasTextMatch = m.message.content.some(c => {
+                                return c.text && c.text.toLowerCase().includes(query);
                             });
 
-                            // Search in tool names
-                            const hasToolMatch = msg.message.content.some(content => {
-                                if (content.toolUse?.name) {
-                                    return content.toolUse.name.toLowerCase().includes(query);
-                                }
-                                return false;
+                            const hasToolMatch = m.message.content.some(c => {
+                                return c.toolUse && c.toolUse.name.toLowerCase().includes(query);
                             });
 
-                            // Search in tool results
-                            const hasResultMatch = msg.message.content.some(content => {
-                                if (content.toolResult?.content) {
-                                    return content.toolResult.content.some(resultContent => {
-                                        if (resultContent.text) {
-                                            return resultContent.text.toLowerCase().includes(query);
-                                        }
-                                        return false;
-                                    });
-                                }
-                                return false;
+                            const hasResultMatch = m.message.content.some(c => {
+                                if (!c.toolResult) return false;
+                                return c.toolResult.content.some(rc => {
+                                    return rc.text && rc.text.toLowerCase().includes(query);
+                                });
                             });
 
                             return hasTextMatch || hasToolMatch || hasResultMatch;
@@ -558,8 +491,7 @@
                 },
 
                 applyFilters() {
-                    // Trigger reactivity by accessing filteredMessages
-                    // Alpine will automatically re-render when filter state changes
+                    // Trigger reactivity
                 },
 
                 clearFilters() {
@@ -581,8 +513,6 @@
                         alert('No session selected');
                         return;
                     }
-
-                    // Download the file by opening the export URL
                     const url = `/api/sessions/${this.selectedSessionId}/export?format=${format}`;
                     window.location.href = url;
                 },
@@ -696,16 +626,12 @@
                         }
 
                         if (data.success) {
-                            // Add to chat history
                             this.chatHistory.push({
                                 question: question,
                                 answer: data.answer
                             });
 
-                            // Show latest answer
                             this.aiResponse = data.answer;
-
-                            // Clear question input
                             this.aiQuestion = '';
                         } else {
                             alert('Failed to get AI response');
