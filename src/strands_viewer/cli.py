@@ -59,6 +59,17 @@ Examples:
         help="Host to bind to (default: 0.0.0.0)",
     )
 
+    parser.add_argument(
+        "--model-provider",
+        choices=["anthropic", "openai", "ollama"],
+        help="Model provider for session analysis (requires AI extra)",
+    )
+
+    parser.add_argument(
+        "--model-id",
+        help="Model ID to use (e.g., claude-sonnet-4-5-20250929, gpt-5-mini-2025-08-07)",
+    )
+
     args = parser.parse_args()
 
     # Validate sessions directory exists
@@ -77,11 +88,37 @@ Examples:
     try:
         from strands_viewer.server import SessionViewerApp
 
+        # Create model instance if provider specified
+        model = None
+        if args.model_provider:
+            try:
+                from strands_viewer.models import (
+                    anthropic_model,
+                    openai_model,
+                    ollama_model,
+                )
+
+                model_kwargs = {}
+                if args.model_id:
+                    model_kwargs["model_id"] = args.model_id
+
+                if args.model_provider == "anthropic":
+                    model = anthropic_model(**model_kwargs)
+                elif args.model_provider == "openai":
+                    model = openai_model(**model_kwargs)
+                elif args.model_provider == "ollama":
+                    model = ollama_model(**model_kwargs)
+
+                print(f"🤖 Using {args.model_provider} model")
+            except ImportError:
+                print("⚠️  Warning: AI features not available.")
+                print("   Install with: pip install 'strands-session-viewer[ai]'")
+
         print(f"\n🚀 Strands Session Viewer v{__version__}")
         print(f"📁 Storage directory: {sessions_dir}")
         print(f"🌐 Starting server on http://localhost:{args.port}\n")
 
-        viewer = SessionViewerApp(str(sessions_dir), args.port)
+        viewer = SessionViewerApp(str(sessions_dir), args.port, model=model)
         viewer.run(open_browser=not args.no_open)
 
     except ImportError as e:

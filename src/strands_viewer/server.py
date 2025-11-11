@@ -23,11 +23,11 @@ except ImportError:
 class SessionViewerApp:
     """Web application for viewing Strands sessions."""
 
-    def __init__(self, storage_dir: str, port: int = 8000):
+    def __init__(self, storage_dir: str, port: int = 8000, model=None):
         self.storage_dir = storage_dir
         self.port = port
         self.reader = SessionReader(storage_dir)
-        self.analyzer = SessionAnalyzer() if AI_AVAILABLE and SessionAnalyzer else None
+        self.analyzer = SessionAnalyzer(model=model) if AI_AVAILABLE and SessionAnalyzer else None
         self.app = self._create_app()
 
     def _create_app(self) -> FastAPI:
@@ -245,9 +245,9 @@ class SessionViewerApp:
         uvicorn.run(self.app, host="0.0.0.0", port=self.port, log_level="info")  # nosec B104
 
 
-def main(storage_dir: str = "./sessions", port: int = 8000, open_browser: bool = True):
+def main(storage_dir: str = "./sessions", port: int = 8000, open_browser: bool = True, model=None):
     """Main entry point."""
-    viewer = SessionViewerApp(storage_dir, port)
+    viewer = SessionViewerApp(storage_dir, port, model=model)
     viewer.run(open_browser=open_browser)
 
 

@@ -65,6 +65,12 @@ strands-viewer /path/to/your/sessions
 # Use a different port
 strands-viewer --port 8080
 
+# Use OpenAI for AI analysis
+strands-viewer --model-provider openai --model-id gpt-5-mini-2025-08-07
+
+# Use Ollama for AI analysis (local)
+strands-viewer --model-provider ollama --model-id qwen3:4b
+
 # See all options
 strands-viewer --help
 ```
@@ -89,19 +95,42 @@ This installs the `strands-agents` package, which powers the AI analysis feature
 
 ### Configuration
 
-AI analysis uses Strands agents, which by default run on **Amazon Bedrock with Claude 4**. Configure your AWS credentials:
+AI analysis supports multiple model providers:
+
+#### **Anthropic** (Default - uses Bedrock)
 
 ```bash
-# Option 1: Environment variables
+# Configure AWS credentials for Bedrock
 export AWS_ACCESS_KEY_ID="your-access-key"
 export AWS_SECRET_ACCESS_KEY="your-secret-key"
 export AWS_REGION="us-east-1"  # Optional, defaults to us-east-1
 
-# Option 2: AWS CLI configuration
-aws configure
+# Or use Anthropic API directly
+export ANTHROPIC_API_KEY="your-api-key"
+
+# Launch with Anthropic model
+strands-viewer --model-provider anthropic --model-id claude-sonnet-4-5-20250929
 ```
 
-Alternatively, use AWS credential files (`~/.aws/credentials` and `~/.aws/config`).
+#### **OpenAI**
+
+```bash
+# Configure OpenAI API key
+export OPENAI_API_KEY="your-api-key"
+
+# Launch with OpenAI model
+strands-viewer --model-provider openai --model-id gpt-5-mini-2025-08-07
+```
+
+#### **Ollama** (Local)
+
+```bash
+# Configure Ollama host (optional, defaults to localhost)
+export OLLAMA_HOST="http://localhost:11434"
+
+# Launch with Ollama model
+strands-viewer --model-provider ollama --model-id qwen3:4b
+```
 
 **Learn more**: [Strands Quickstart Guide](https://strandsagents.com/latest/documentation/docs/user-guide/quickstart/)
 
@@ -201,10 +230,16 @@ strands-session-viewer/
 │       ├── server.py           # FastAPI server
 │       ├── session_reader.py   # Session file parser
 │       ├── export_formatter.py # Export formatters (Markdown, JSON, text)
+│       ├── ai_analysis.py      # Session analysis with intelligent tools
+│       ├── models/             # Model provider configurations
+│       │   ├── __init__.py
+│       │   └── models.py       # Factory functions for Anthropic, OpenAI, Ollama
 │       └── static/
 │           └── index.html      # Web interface
 ├── tests/                      # Test suite
 ├── pyproject.toml             # Package configuration
+├── CHANGELOG.md               # Version history
+├── CLAUDE.md                  # Development notes
 ├── LICENSE                    # MIT License
 └── README.md                 # This file
 ```
@@ -219,12 +254,18 @@ Dependencies are automatically installed with the package.
 
 ## API Endpoints
 
-The viewer exposes a simple REST API:
+The viewer exposes a REST API:
 
+### Core Endpoints
 - `GET /api/sessions` - List all sessions
 - `GET /api/sessions/{session_id}` - Get session details
 - `GET /api/sessions/{session_id}/messages` - Get session messages (with pagination)
 - `GET /api/sessions/{session_id}/export?format=markdown` - Export session (formats: markdown, json, text)
+
+### Analysis Endpoints (Optional)
+- `GET /api/ai/status` - Check if analysis features are available
+- `POST /api/sessions/{session_id}/analyze` - Run analysis (types: summarize, errors, improvements)
+- `POST /api/sessions/{session_id}/chat` - Interactive Q&A about session
 
 ## Development
 

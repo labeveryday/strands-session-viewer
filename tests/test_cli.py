@@ -49,9 +49,10 @@ def test_cli_valid_directory_mock(temp_sessions_dir, monkeypatch):
     server_started = False
 
     class MockViewerApp:
-        def __init__(self, storage_dir, port):
+        def __init__(self, storage_dir, port, model=None):
             self.storage_dir = storage_dir
             self.port = port
+            self.model = model
 
         def run(self, open_browser=False):
             nonlocal server_started

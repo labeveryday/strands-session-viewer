@@ -14,12 +14,13 @@ except ImportError:
 class SessionAnalyzer:
     """Analyze agent sessions using Strands AI agents with custom analysis tools."""
 
-    def __init__(self, model: Optional[str] = None):
+    def __init__(self, model: Optional[Any] = None):
         """
         Initialize the session analyzer.
 
         Args:
-            model: Optional model ID (defaults to Claude 4 on Bedrock)
+            model: Optional model instance from models.anthropic_model(), models.openai_model(),
+                   or models.ollama_model(). Defaults to Claude 4 on Bedrock if not provided.
         """
         if not STRANDS_AVAILABLE:
             raise ImportError(
