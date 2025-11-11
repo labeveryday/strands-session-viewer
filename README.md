@@ -88,7 +88,7 @@ Enhance your debugging with AI-powered analysis using Strands agents. The viewer
 To enable AI analysis features, install with the `ai` extra:
 
 ```bash
-pip install 'strands-session-viewer[ai]' git+https://github.com/labeveryday/strands-session-viewer.git
+pip install 'strands-session-viewer[ai] @ git+https://github.com/labeveryday/strands-session-viewer.git'
 ```
 
 This installs the `strands-agents` package, which powers the AI analysis features.
@@ -156,7 +156,7 @@ The AI maintains conversation history, so you can have a back-and-forth dialogue
 
 ```bash
 # 1. Install with AI support
-pip install 'strands-session-viewer[ai]' git+https://github.com/labeveryday/strands-session-viewer.git
+pip install 'strands-session-viewer[ai] @ git+https://github.com/labeveryday/strands-session-viewer.git'
 
 # 2. Configure AWS credentials
 export AWS_ACCESS_KEY_ID="your-key"
