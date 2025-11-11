@@ -11,12 +11,115 @@
     <!-- Alpine.js for reactivity -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+
     <style>
         [x-cloak] { display: none !important; }
 
         .message-content {
             white-space: pre-wrap;
             word-wrap: break-word;
+        }
+
+        /* Markdown styling for AI responses */
+        .markdown-content {
+            line-height: 1.6;
+        }
+
+        .markdown-content h1 {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            color: #1f2937;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-top: 0.8em;
+            margin-bottom: 0.4em;
+            color: #374151;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-top: 0.6em;
+            margin-bottom: 0.3em;
+            color: #4b5563;
+        }
+
+        .markdown-content p {
+            margin-bottom: 0.8em;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-left: 1.5em;
+            margin-bottom: 0.8em;
+        }
+
+        .markdown-content li {
+            margin-bottom: 0.3em;
+        }
+
+        .markdown-content code {
+            background-color: #f3f4f6;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: ui-monospace, monospace;
+            font-size: 0.9em;
+            color: #ef4444;
+        }
+
+        .markdown-content pre {
+            background-color: #1f2937;
+            color: #f9fafb;
+            padding: 1em;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-bottom: 0.8em;
+        }
+
+        .markdown-content pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: 0.875em;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #d1d5db;
+            padding-left: 1em;
+            margin-left: 0;
+            margin-bottom: 0.8em;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .markdown-content strong {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .markdown-content em {
+            font-style: italic;
+        }
+
+        .markdown-content a {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+
+        .markdown-content a:hover {
+            color: #2563eb;
+        }
+
+        .markdown-content hr {
+            border: 0;
+            border-top: 1px solid #e5e7eb;
+            margin: 1.5em 0;
         }
 
         .tool-call {
@@ -319,7 +422,7 @@
                     <div x-show="aiResponse && !analyzingSession" class="bg-purple-50 border border-purple-200 rounded-lg p-4">
                         <div class="flex items-start space-x-2">
                             <span class="text-purple-600">🤖</span>
-                            <div class="flex-1 text-sm text-gray-800 message-content" x-text="aiResponse"></div>
+                            <div class="flex-1 text-sm text-gray-800 markdown-content" x-html="renderMarkdown(aiResponse)"></div>
                         </div>
                     </div>
 
@@ -337,7 +440,7 @@
                             <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
                                 <div class="flex items-start space-x-2">
                                     <span class="text-purple-600">🤖</span>
-                                    <div class="flex-1 text-sm text-gray-800 message-content" x-text="chat.answer"></div>
+                                    <div class="flex-1 text-sm text-gray-800 markdown-content" x-html="renderMarkdown(chat.answer)"></div>
                                 </div>
                             </div>
                         </div>
@@ -405,6 +508,12 @@
                     if (this.sessions.length > 0) {
                         await this.selectSession(this.sessions[0].session_id);
                     }
+                },
+
+                // Render markdown to HTML
+                renderMarkdown(text) {
+                    if (!text) return '';
+                    return marked.parse(text);
                 },
 
                 async loadSessions() {
