@@ -284,7 +284,7 @@ Use the available tools to gather information about the session, then provide:
 Keep the summary clear and actionable."""
 
         result = agent(prompt)
-        return result.content
+        return str(result)
 
     def analyze_errors(self, session: Dict[str, Any]) -> Optional[str]:
         """
@@ -304,7 +304,7 @@ Keep the summary clear and actionable."""
         )
         check_result = agent(prompt_check)
 
-        if "No errors found" in check_result.content:
+        if "No errors found" in str(check_result):
             return None
 
         prompt = """Analyze the errors in this Strands agent session and provide debugging help.
@@ -318,7 +318,7 @@ Use the available tools to gather information about the errors, then provide:
 Be specific and actionable in your recommendations."""
 
         result = agent(prompt)
-        return result.content
+        return str(result)
 
     def answer_question(
         self,
@@ -358,7 +358,7 @@ Use the available tools to analyze the session and answer the user's question ac
 Use the available tools to analyze the session and answer the user's question accurately."""
 
         result = agent(prompt)
-        return result.content
+        return str(result)
 
     def suggest_improvements(self, session: Dict[str, Any]) -> str:
         """
@@ -383,7 +383,7 @@ Use the available tools to understand the session, then provide:
 Focus on actionable, specific recommendations."""
 
         result = agent(prompt)
-        return result.content
+        return str(result)
 
     @staticmethod
     def is_available() -> bool:
