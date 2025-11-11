@@ -43,6 +43,15 @@ No need to manually parse JSON files or write custom scripts - just launch the v
 - 💡 **Improvement Suggestions** - Get recommendations to optimize your agents
 - 💬 **Interactive Q&A** - Ask questions about sessions and get AI answers
 - 🧠 **Powered by Strands** - Uses Strands agents for consistent, high-quality analysis
+- 📝 **Markdown Formatted** - AI responses render with proper formatting (headings, code blocks, lists)
+- 💬 **Conversation History** - Maintains context for multi-turn discussions about sessions
+
+### Modern UI/UX
+- 📱 **Three-Panel Layout** - Sessions (left), Messages (center), AI Chat (right)
+- 🍔 **Collapsible Sidebar** - Toggle sessions panel with hamburger menu
+- 📱 **Responsive Design** - Works on mobile, tablet, and desktop
+- 🎯 **Collapsible Tool Details** - Tool calls and results are collapsed by default
+- ⚡ **Optimized for Speed** - Defaults to Claude Haiku 4.5 for fast, cost-effective AI analysis
 
 ## Quick Start
 
@@ -85,6 +94,12 @@ strands-viewer ../my-agent/src/sessions
 #### Common Examples
 
 ```bash
+# Launch with default AI analysis (Anthropic Haiku 4.5 - fast and cost-effective)
+strands-viewer
+
+# Use a more powerful model for complex analysis
+strands-viewer --model-id claude-sonnet-4-5-20250929
+
 # View sessions with AI analysis using OpenAI
 strands-viewer --model-provider openai --model-id gpt-5-mini-2025-08-07
 
@@ -94,8 +109,8 @@ strands-viewer --model-provider ollama --model-id qwen3:4b
 # Use a different port
 strands-viewer --port 8080
 
-# Specify sessions directory and model provider
-strands-viewer /path/to/sessions --model-provider anthropic
+# Specify sessions directory
+strands-viewer /path/to/sessions
 
 # See all options
 strands-viewer --help
@@ -142,9 +157,9 @@ This installs the `strands-agents` package, which powers the AI analysis feature
 
 ### Configuration
 
-AI analysis supports multiple model providers:
+AI analysis supports multiple model providers. By default, the viewer uses **Claude Haiku 4.5** via Anthropic for fast, cost-effective analysis.
 
-#### **Anthropic** (Default - uses Bedrock)
+#### **Anthropic** (Default)
 
 ```bash
 # Configure AWS credentials for Bedrock
@@ -155,8 +170,11 @@ export AWS_REGION="us-east-1"  # Optional, defaults to us-east-1
 # Or use Anthropic API directly
 export ANTHROPIC_API_KEY="your-api-key"
 
-# Launch with Anthropic model
-strands-viewer --model-provider anthropic --model-id claude-sonnet-4-5-20250929
+# Launch with default model (Haiku 4.5 - fast and cheap)
+strands-viewer
+
+# Or use a more powerful model
+strands-viewer --model-id claude-sonnet-4-5-20250929
 ```
 
 #### **OpenAI**
@@ -183,21 +201,28 @@ strands-viewer --model-provider ollama --model-id qwen3:4b
 
 ### Features
 
-Once configured, you'll see an **AI Session Analysis** panel when viewing any session:
+Once configured, you'll see an **AI Analysis** panel on the right side when viewing any session:
 
-#### Quick Analysis
+#### Quick Analysis Buttons
 - **📊 Summarize** - Get an AI-generated summary of the entire session
-- **❌ Analyze Errors** - Understand what went wrong and why
-- **💡 Suggest Improvements** - Get recommendations to optimize your agent
+- **❌ Errors** - Analyze errors and get debugging suggestions
+- **💡 Suggest** - Get recommendations to optimize your agent
+
+Each quick analysis adds to the conversation history, maintaining context for follow-up questions.
 
 #### Interactive Chat
-Ask questions about the session and get instant AI-powered answers:
+Ask custom questions about the session and get instant AI-powered answers:
 - "Why did this tool call fail?"
 - "How could this agent be more efficient?"
 - "What was the agent trying to accomplish here?"
 - "Are there any security concerns in this session?"
 
-The AI maintains conversation history, so you can have a back-and-forth dialogue about your sessions.
+**Features:**
+- Maintains full conversation history for context
+- Markdown-formatted responses with code blocks, headings, and lists
+- Session ID displayed in panel header
+- Clear conversation button to start fresh
+- Powered by custom Strands analysis tools
 
 ### Example Workflow
 
@@ -224,29 +249,37 @@ The AI features are completely optional. Without the `ai` extra installed, the v
 
 ## Interface Overview
 
+The viewer features a modern three-panel layout optimized for session analysis:
+
 ![Interface Overview](docs/images/interface-overview.png)
 
-### Session List (Left Sidebar)
+### Left Panel - Session List
 - Click any session to view its messages
-- Shows message count and last update time
+- Shows session ID, message count, and last update time
 - Sessions sorted by most recent first
+- **Collapsible** - Toggle with hamburger menu to maximize space
+- Responsive - Hidden on mobile, overlay mode on tablets
 
-### Message View (Main Panel)
+### Middle Panel - Message View
 - **User messages** (blue) - Your prompts to the agent
 - **Assistant messages** (purple) - Agent responses
-- **Tool calls** (yellow) - Tools the agent invoked
-- **Tool results** (green/red) - Successful or failed tool outputs
+- **Tool calls** (yellow) - Collapsible tool invocations with inputs
+- **Tool results** (green/red) - Collapsible outputs (success or error)
+- **Search & Filters** - Find text, filter by role, show only errors/tools
+- **Export** - Download as Markdown, JSON, or plain text
 
-### Filters & Search
-- **Search** - Find text in messages, tool names, or outputs
-- **Role Filter** - Show only user or assistant messages
-- **Tool Calls** - Show only messages with tool usage
-- **Errors** - Show only failed tool executions
+### Right Panel - AI Analysis (Optional)
+- **Quick Actions** - Summarize, analyze errors, suggest improvements
+- **Interactive Chat** - Ask questions about the session
+- **Markdown Rendering** - AI responses with proper formatting
+- **Conversation History** - Full context for multi-turn discussions
+- Shows which session is being analyzed
+- Only visible on larger screens (≥1280px width)
 
-### Export Options
-- **Markdown** - Perfect for documentation and course materials
-- **JSON** - For programmatic analysis and archiving
-- **Plain Text** - Simple, readable format for sharing
+### Responsive Design
+- **Desktop** (≥1280px): All three panels visible
+- **Tablet** (768-1279px): Sidebar collapsible, no AI panel
+- **Mobile** (<768px): Single column, sidebar as overlay
 
 ## Use Cases
 
