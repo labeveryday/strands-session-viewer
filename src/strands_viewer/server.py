@@ -178,6 +178,10 @@ class SessionViewerApp:
             except HTTPException:
                 raise
             except Exception as e:
+                import traceback
+
+                print(f"❌ Error during analysis: {e}")
+                traceback.print_exc()
                 raise HTTPException(status_code=500, detail=str(e))
 
         @app.post("/api/sessions/{session_id}/chat")
@@ -217,6 +221,10 @@ class SessionViewerApp:
             except HTTPException:
                 raise
             except Exception as e:
+                import traceback
+
+                print(f"❌ Error during chat: {e}")
+                traceback.print_exc()
                 raise HTTPException(status_code=500, detail=str(e))
 
         # Serve the HTML interface
