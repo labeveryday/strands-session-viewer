@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - SessionAnalyzer now accepts model instances instead of model ID strings
 - Updated documentation with multi-provider configuration examples
+- Clarified installation and usage workflow in README
+  - Separated viewer installation from agent projects
+  - Added step-by-step typical workflow
+  - Explained navigation to sessions directory
 
 ## [0.1.0] - 2025-01-11
 
